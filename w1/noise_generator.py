@@ -30,12 +30,13 @@ def noise_bboxes(BBs,mean = 0, std = 1.0, dropout = 0.5, generate = 0.5):
             xmax = xmin + (w + np.random.normal(mean,std))
             ymax = ymin + (h + np.random.normal(mean,std))
 
-            newBBs.append([xmin, ymin, xmax, ymax])
+            BB['bbox'] = [xmin, ymin, xmax, ymax]
+            newBBs.append(BB)
         
         generation = np.random.choice([True,False],1,p = [generate, 1-generate])
         if generation: # Generate new bbox
-            w_max = 1920
-            h_max = 1080
+            w_max = 1920 # Width of the frame
+            h_max = 1080 # Height of the frame
 
             xmin = np.random.uniform(0,1000)
             ymin = np.random.uniform(0,1000)
@@ -43,7 +44,10 @@ def noise_bboxes(BBs,mean = 0, std = 1.0, dropout = 0.5, generate = 0.5):
             xmax = xmin + np.random.uniform(0,w_max - xmin)
             ymax = ymin + np.random.uniform(0,h_max - ymin)
 
-            newBBs.append([xmin, ymin, xmax, ymax])
+            confidence = np.round(np.random.uniform(0,1),3) # Random uniform confidence
+            
+            randomBB = {'name': BB['name'], 'bbox': [xmin, ymin, xmax, ymax], 'confidence': confidence}
+            newBBs.append(randomBB)
 
     
     return newBBs

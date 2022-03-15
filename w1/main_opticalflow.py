@@ -109,14 +109,15 @@ def OF_quiver_visualize(img, flow, step, fname_output='flow_quiver.png'):
 
     (h, w) = flow.shape[0:2]
 
-    M = np.hypot(u, v)  # color
+    """ M = np.hypot(u, v)  # color """
+    M = np.zeros((u.shape[0], u.shape[1],3))
 
     x, y = np.meshgrid(np.arange(0, w), np.arange(0, h))  # initial
 
     plt.figure()
     plt.imshow(img, cmap='gray')
     plt.quiver(x[::step, ::step], y[::step, ::step], U[::step, ::step], V[::step, ::step],
-               M[::step, ::step], scale_units='xy', angles='xy', scale=.05, color=(1, 0, 0, 1))
+                scale_units='xy', angles='xy', scale=.5, color=(1, 0,1), width=0.001)
     plt.axis('off')
     plt.show()
 
@@ -176,7 +177,9 @@ if __name__ == "__main__":
 
             #plot_OF_errors(error)
 
-            OF_quiver_visualize()
+            img = plt.imread(os.path.join(img_dir,f'{seq_number}.png'))
+            img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            OF_quiver_visualize(img_gray,gt_OF[seq_number],10)
 
 
 
