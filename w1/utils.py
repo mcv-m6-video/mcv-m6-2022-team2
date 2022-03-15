@@ -1,3 +1,4 @@
+import cv2
 import matplotlib.pyplot as plt
 import os
 import numpy as np
@@ -60,3 +61,18 @@ def dict_to_list(frame_info):
     :return: return the list created
     """
     return [[obj['bbox'][0], obj['bbox'][1], obj['bbox'][2], obj['bbox'][3]] for obj in frame_info]
+
+def plotBBox(img_path, initalFrame, finalFrame, **labels):
+    frames = []
+    COLORS=[(0,255,0), (255,0,0)]
+    for frame_num in range(initalFrame, finalFrame):
+        im = cv2.imread(img_path[frame_num])
+        for idx, (name, labels_total) in enumerate(labels.items()):
+            labels_frame = labels_total[f'{frame_num:04}']
+            for label in labels_frame:
+                bbox = label['bbox']
+                bbox = [round(x) for x in bbox]
+                im = cv2.rectangle(img=im, pt1=(bbox[0], bbox[1]), pt2=(bbox[2], bbox[3]), color=COLORS[idx], thickness=2)
+        frames.append(im)
+
+    return frames

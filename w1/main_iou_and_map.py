@@ -1,7 +1,9 @@
+import cv2
+
 from dataset_gestions import load_labels, get_frames_paths
 from metric_functions import evaluation_single_class
 from noise_generator import noise_bboxes
-from utils import plot_precision_recall_one_class, plot_iou_vs_time
+from utils import plot_precision_recall_one_class, plot_iou_vs_time, plotBBox
 
 """
 In this .py is implemented the following:
@@ -11,10 +13,10 @@ In this .py is implemented the following:
 """
 
 # If you want to add noise to the bounding boxes and delete some of them, set this variable to true:
-add_noise = True
+add_noise = False
 
 # If you want to plot graphics, set this variable to true:
-plot_results = True
+plot_results = False
 
 # Directions where all the sequence is located
 path_data = '../AICity_data/train/S03/c010'
@@ -57,6 +59,9 @@ for det_file_path in det_file_paths:
     detections = load_labels(det_path, det_file_path)
     recall, precision, ap = evaluation_single_class(ground_truth, frames_paths, detections)
     print(f'AP for detection {det_file_path.split(".txt")[0]} is: {round(ap, 4)}')
+
+    frames = plotBBox(frames_paths, 1, 200, ground_truth=ground_truth, detections=detections)
+
     if plot_results:
         plot_precision_recall_one_class(recall, precision, ap, det_file_path.split(".txt")[0])
         plot_iou_vs_time(det_file_path, frames_paths, ground_truth, detections)
