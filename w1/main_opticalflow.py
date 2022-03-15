@@ -137,6 +137,9 @@ def plot_OF_errors(error):
     x = np.linspace(xmin, xmax, 100)
     y = ymax * np.exp(-(x-mu) ** 2 / (2 * std **2))
     plt.plot(x, y)
+    plt.text(xmax - 0.2*xmax, ymax - 0.2*ymax, f"Mean: {mu:.2f}\nStd: {std:.2f}", size=10, bbox=dict(boxstyle='round',
+                                                                                                     ec='darkorange',
+                                                                                                     fc='orange'))
     plt.show()
 
 if __name__ == "__main__":
@@ -175,7 +178,7 @@ if __name__ == "__main__":
             # Plot the magnitude and direction of the GT and Detected OFs
             #draw_OF_magnitude_direction(gt_OF[seq_number], det_OF[seq_number])
 
-            #plot_OF_errors(error)
+            plot_OF_errors(error)
 
             img = plt.imread(os.path.join(img_dir,f'{seq_number}.png'))
             img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
