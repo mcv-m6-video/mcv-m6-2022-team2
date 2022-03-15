@@ -41,11 +41,15 @@ def plot_iou_vs_time(det_file_path, frames_paths, ground_truth, detections):
         mean = mean_iou(gt_frame, dets_frame)
         miou = np.hstack((miou, mean))
 
-    plt.plot(idFrames, miou)
-    plt.ylim([0, 1])
-    plt.xlabel('Frame')
-    plt.ylabel('mean IoU')
-    plt.title(f'Mean IoU in function of the frame in model {det_file_path.split(".txt")[0]}')
+    for i in range(200):
+        plt.plot(idFrames[:i], miou[:i], color="blue")
+        plt.ylim([0, 1])
+        plt.xlim([0, 200])
+        plt.xlabel('Frame')
+        plt.ylabel('mean IoU')
+        plt.title(f'Mean IoU in function of the frame in model {det_file_path.split(".txt")[0]}')
+        plt.pause(0.05)
+    
     plt.show()
 
 

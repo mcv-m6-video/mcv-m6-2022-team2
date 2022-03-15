@@ -30,8 +30,9 @@ def noise_bboxes(BBs,mean = 0, std = 1.0, dropout = 0.5, generate = 0.5):
             xmax = xmin + (w + np.random.normal(mean,std))
             ymax = ymin + (h + np.random.normal(mean,std))
 
-            BB['bbox'] = [xmin, ymin, xmax, ymax]
-            newBBs.append(BB)
+            BBnew = BB.copy()
+            BBnew['bbox'] = [xmin, ymin, xmax, ymax]
+            newBBs.append(BBnew)
         
         generation = np.random.choice([True,False],1,p = [generate, 1-generate])
         if generation: # Generate new bbox

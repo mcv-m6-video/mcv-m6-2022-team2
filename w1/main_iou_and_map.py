@@ -32,8 +32,19 @@ ground_truth = load_labels(path_gt, 'w1_annotations.xml')  # ground_truth = load
 frames_paths = get_frames_paths(path_video)
 
 # To see if our method is robust, we set the detections = ground truth and plot results.
-recall, precision, ap = evaluation_single_class(ground_truth, frames_paths, ground_truth)
-print('AP if there is not noise: ', round(ap, 2))
+if add_noise:
+    detections_noisy = {}
+    for d in ground_truth:
+        detections_noisy[d] = noise_bboxes(ground_truth[d],mean = 1, std = 0, dropout = 0.5, generate = 0.4)
+
+    recall, precision, ap = evaluation_single_class(ground_truth, frames_paths, detections_noisy)
+    print(f'AP for detection ground_truth + noise is: {round(ap, 4)}')
+    if plot_results:
+        plot_precision_recall_one_class(recall, precision, ap, "Ground truth + noise")
+        plot_iou_vs_time("Ground truth + noise", frames_paths, ground_truth, detections_noisy)
+else:
+    recall, precision, ap = evaluation_single_class(ground_truth, frames_paths, ground_truth)
+    print('AP if there is not noise: ', round(ap, 4))
 
 # Direction where all the detected annotations are located
 det_path = path_data + '/det'
@@ -49,15 +60,3 @@ for det_file_path in det_file_paths:
     if plot_results:
         plot_precision_recall_one_class(recall, precision, ap, det_file_path.split(".txt")[0])
         plot_iou_vs_time(det_file_path, frames_paths, ground_truth, detections)
-
-
-    if add_noise:
-        detections_noisy = detections.copy()
-        for d in detections:
-            detections_noisy[d] = noise_bboxes(detections[d],mean = 0, std = 10.0, dropout = 0, generate = 0)
-
-        recall, precision, ap = evaluation_single_class(ground_truth, frames_paths, detections_noisy)
-        print(f'AP for detection {det_file_path.split(".txt")[0]} is: {round(ap, 4)}')
-        if plot_results:
-            plot_precision_recall_one_class(recall, precision, ap, det_file_path.split(".txt")[0])
-            plot_iou_vs_time(det_file_path, frames_paths, ground_truth, detections_noisy)
