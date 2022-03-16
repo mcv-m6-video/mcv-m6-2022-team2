@@ -42,14 +42,26 @@ def plot_iou_vs_time(det_file_path, frames_paths, ground_truth, detections):
         mean = mean_iou(gt_frame, dets_frame)
         miou = np.hstack((miou, mean))
 
-    for i in range(200):
+    print(f'Mean Iou: {np.round(np.mean(miou),4)}')
+    plt.figure()
+    for i in range(800,1000):
         plt.plot(idFrames[:i], miou[:i], color="blue")
         plt.ylim([0, 1])
-        plt.xlim([0, 200])
+        plt.xlim([800, 1000])
         plt.xlabel('Frame')
         plt.ylabel('mean IoU')
         plt.title(f'Mean IoU in function of the frame in model {det_file_path.split(".txt")[0]}')
         plt.pause(0.05)
+        
+        """ if not os.path.exists(det_file_path.split(".txt")[0] + '_meanIoU'):
+            os.mkdir(det_file_path.split(".txt")[0] + '_meanIoU')
+            
+        if i < 1000:
+            frame = '0' + str(i) 
+        else:
+            frame = str(i)
+            
+        plt.savefig(f'{det_file_path.split(".txt")[0]}_meanIoU/meanIou_{frame}.png') """
     
     plt.show()
 
@@ -64,7 +76,7 @@ def dict_to_list(frame_info):
 
 def plotBBox(img_path, initalFrame, finalFrame, **labels):
     frames = []
-    COLORS=[(0,255,0), (255,0,0)]
+    COLORS=[(0,255,0), (0,0,255)]
     for frame_num in range(initalFrame, finalFrame):
         im = cv2.imread(img_path[frame_num])
         for idx, (name, labels_total) in enumerate(labels.items()):
@@ -73,6 +85,7 @@ def plotBBox(img_path, initalFrame, finalFrame, **labels):
                 bbox = label['bbox']
                 bbox = [round(x) for x in bbox]
                 im = cv2.rectangle(img=im, pt1=(bbox[0], bbox[1]), pt2=(bbox[2], bbox[3]), color=COLORS[idx], thickness=2)
+
         frames.append(im)
 
     return frames

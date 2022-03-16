@@ -1,4 +1,6 @@
 import cv2
+import matplotlib.pyplot as plt
+import os
 
 from dataset_gestions import load_labels, get_frames_paths
 from metric_functions import evaluation_single_class
@@ -16,7 +18,7 @@ In this .py is implemented the following:
 add_noise = False
 
 # If you want to plot graphics, set this variable to true:
-plot_results = False
+plot_results = True
 
 # Directions where all the sequence is located
 path_data = '../AICity_data/train/S03/c010'
@@ -60,8 +62,19 @@ for det_file_path in det_file_paths:
     recall, precision, ap = evaluation_single_class(ground_truth, frames_paths, detections)
     print(f'AP for detection {det_file_path.split(".txt")[0]} is: {round(ap, 4)}')
 
-    frames = plotBBox(frames_paths, 1, 200, ground_truth=ground_truth, detections=detections)
+    frames = plotBBox(frames_paths, 800, 1000, ground_truth=ground_truth, detections=detections)
+    
+    if not os.path.exists(det_file_path.split(".txt")[0] + '_bboxes'):
+        os.mkdir(det_file_path.split(".txt")[0] + '_bboxes')
+        
+        for i in range(len(frames)):
+            if i < 1000:
+                frame = '0' + str(i + 800) 
+            else:
+                frame = str(i + 800)
+
+            cv2.imwrite(f'{det_file_path.split(".txt")[0]}_bboxes/bboxes_{frame}.png',frames[i])
 
     if plot_results:
-        plot_precision_recall_one_class(recall, precision, ap, det_file_path.split(".txt")[0])
+        #plot_precision_recall_one_class(recall, precision, ap, det_file_path.split(".txt")[0])
         plot_iou_vs_time(det_file_path, frames_paths, ground_truth, detections)
