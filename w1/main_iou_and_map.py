@@ -21,7 +21,7 @@ add_noise = False
 plot_results = True
 
 # Directions where all the sequence is located
-path_data = '../AICity_data/train/S03/c010'
+path_data = '../../data/AICity_data/train/S03/c010'
 
 # Direction where all the ground truth annotations are located
 path_gt = path_data + '/gt'

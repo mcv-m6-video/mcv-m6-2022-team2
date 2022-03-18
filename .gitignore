@@ -1,5 +1,5 @@
 #DDBB
-AICity_data/
+../AICity_data/
 data_stereo_flow/
 results_opticalflow_kitti/
 
