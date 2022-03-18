@@ -2,6 +2,7 @@ import scipy.stats as stats
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+import cv2
 
 def plot_gaussian_single_pixel(mean, std, pixel):
     """
@@ -20,3 +21,19 @@ def plot_gaussian_single_pixel(mean, std, pixel):
     plt.title(f'modeling of pixel {pixel}')
     plt.plot(x, stats.norm.pdf(x, mu, sigma))
     plt.show()
+    
+def plotBBox(img_path, initalFrame, finalFrame, **labels):
+    frames = []
+    COLORS=[(0,255,0), (0,0,255)]
+    for frame_num in range(initalFrame, finalFrame):
+        im = cv2.imread(img_path[frame_num])
+        print(labels)
+        for idx, (name, labels_total) in enumerate(labels.items()):
+            labels_total
+            for bbox in labels_total:
+                bbox = [round(x) for x in bbox]
+                im = cv2.rectangle(img=im, pt1=(bbox[0], bbox[1]), pt2=(bbox[0] + bbox[2], bbox[1] + bbox[3]), color=COLORS[idx], thickness=2)
+
+        frames.append(im)
+
+    return frames

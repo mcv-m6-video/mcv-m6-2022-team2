@@ -4,6 +4,8 @@ import numpy as np
 import pickle
 from os.path import exists
 from utils import plot_gaussian_single_pixel
+from matplotlib import pyplot as plt
+from utils import plotBBox
 
 def single_gaussian_estimation(frames_paths, alpha=2, plot_results=False):
 
@@ -11,6 +13,7 @@ def single_gaussian_estimation(frames_paths, alpha=2, plot_results=False):
     n_frames_modeling_bg = round(len(frames_paths) * 0.25)
 
     mean, std = model_bg_single_gaussian(frames_paths[:n_frames_modeling_bg])
+    segment_fg_bg(frames_paths[n_frames_modeling_bg:],mean,std,0.3)
 
     if plot_results:
         plot_gaussian_single_pixel(mean, std, pixel=[256, 234])
@@ -71,3 +74,17 @@ def bg_single_gaussian_frame(frame_path, mean, std, alpha):
 
 # todo:
 #  funcion que llame a bg_single_gaussian_frame y calcule masks y bboxes para todos
+
+def segment_fg_bg(frames_paths,mean,std,alpha):
+    for f_path in frames_paths:
+        bg = bg_single_gaussian_frame(f_path, mean, std, alpha)
+        bg_opened = cv2.morphologyEx(bg, cv2.MORPH_OPEN,kernel=np.ones((5,5),np.uint8))
+        bg_closed = cv2.morphologyEx(bg_opened, cv2.MORPH_CLOSE,kernel=np.ones((30,30),np.uint8))
+        (_, components, stats, _) = cv2.connectedComponentsWithStats(bg_closed)
+       
+        frame = plotBBox([f_path], 0, 1, predicted=stats[:,:4]) # TODO, filtrar connected components por tamaño
+
+        plt.imshow(frame[0])
+        plt.pause(0.05)
+    
+    plt.show()    
