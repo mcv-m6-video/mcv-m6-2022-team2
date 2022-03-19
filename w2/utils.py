@@ -108,5 +108,16 @@ def plot_pixel_detection(frames,mean,std,alpha,n_frames):
         if idx == 0:
             plt.legend()
         plt.savefig("task1_plots/plot_mean/frame_" + idx_txt + '.png')
+def plot_precision_recall_one_class(prec, recall, ap, info):
+    """
+    Plot precision and recall
+    :param prec
+    :param recall
+    :param ap
+    """
+    plt.plot(prec, recall)
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title(f'Precision vs recall in model {info} with AP: {ap}')
+    plt.show()
 
-# todo: grafica segun alpha vs map

@@ -9,7 +9,7 @@ from utils import plotBBox, read_frames, plot_pixel_detection
 from dataset_gestions import update_labels
 import os
 
-def single_gaussian_estimation(frames_paths, alpha=2, plot_results=False):
+def single_gaussian_estimation(frames_paths, alpha=0.2, plot_results=False):
     """
     It is the MOTHER FUNCTION. It estimates the background and foreground, computes the bounding boxes
     from the masks with several techniques and returns the labels dictionary of lists updated.
@@ -94,7 +94,7 @@ def bg_single_gaussian_frame(frame, mean, std, alpha):
     return mask
 
 
-def segment_fg_bg(frames, n_frames_modeling_bg, mean, std, alpha, plot_results=False):
+def segment_fg_bg(frames, n_frames_modeling_bg, mean, std, alpha, plot_results=True):
     """
     Compute background and foreground for all frames.
     :param frames: Variable where all the frames are stacked
@@ -129,6 +129,8 @@ def segment_fg_bg(frames, n_frames_modeling_bg, mean, std, alpha, plot_results=F
             plt.pause(0.05) """
         
             # TODO, gráfico mostrando la media y alpha*(2+std) de un pixel y su valor a lo largo del tiempo: x=681 y=646
+
+    plt.show()
 
     print('Finished!')
 
@@ -167,9 +169,12 @@ def extract_bboxes_from_bg(bg_preprocessed):
     bboxes = []
     for stat in stats:
         # Filter for area, if below that region, we drop the bbox
-        if stat[4] > 50:
+        if stat[4] > 500:
             bboxes.append([stat[0], stat[1], stat[2], stat[3]])  # x, y, h, w
 
     # todo: Drop last bbox, it represents all the image. No se si hará petar el codigo para cuando no hay...
 
     return bboxes, stats
+
+
+#def change_new_params_gaussian()
