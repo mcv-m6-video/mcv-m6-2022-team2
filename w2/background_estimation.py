@@ -5,7 +5,7 @@ import pickle
 from os.path import exists
 from utils import plot_gaussian_single_pixel
 from matplotlib import pyplot as plt
-from utils import plotBBox, read_frames
+from utils import plotBBox, read_frames, plot_pixel_detection
 from dataset_gestions import update_labels
 import os
 
@@ -28,39 +28,8 @@ def single_gaussian_estimation(frames_paths, alpha=2, plot_results=False):
     # Model the bg as a single gaussian
     mean, std = model_bg_single_gaussian(frames[:n_frames_modeling_bg])
     
-    if not os.path.exists('task1_plots'):
-        os.makedirs('task1_plots/frames')
-        os.makedirs('task1_plots/plot_mean')
-        
-        for idx, frame in tqdm(enumerate(frames[n_frames_modeling_bg:n_frames_modeling_bg+100])):
-            mean_px = mean[646,681]
-            std_px = std[646,681]
-            mean_px = np.repeat([mean_px],100)
-            std_px = np.repeat([std_px],100)
-            x = np.arange(n_frames_modeling_bg,n_frames_modeling_bg+100)
-            
-            frame = cv2.imread(frames_paths[n_frames_modeling_bg+idx])
-            frame_aux = frame.copy()
-            frame_aux = cv2.rectangle(img=frame_aux, pt1=(626, 661), pt2=(666, 701), color=(0,0,255), thickness=10)
-            
-            if idx < 10:
-                idx_txt = '0' + str(idx)
-            else:
-                idx_txt = str(idx)
-                
-            cv2.imwrite("task1_plots/frames/frame_" + idx_txt + '.png',frame_aux)
-            
-            plt.plot(x,mean_px,color='black', label="Pixel's mean")
-            print((mean_px + alpha * (2 + std_px)).shape)
-            plt.plot(x,mean_px + alpha * (2 + std_px), linestyle='--',color='blue',label="Detection threshold")
-            plt.plot(x,mean_px - alpha * (2 + std_px), linestyle='--',color='blue')
-            plt.plot(x[:idx+1],frames[n_frames_modeling_bg:n_frames_modeling_bg+idx+1,646,681],color="red",label="Pixel's value")
-            plt.ylim(0,255)
-            plt.xlabel("Frame")
-            plt.ylabel("Grayscale value")
-            if idx == 0:
-                plt.legend()
-            plt.savefig("task1_plots/plot_mean/frame_" + idx_txt + '.png')
+    if plot_results and not exists('task1_plots'):
+        plot_pixel_detection(frames[n_frames_modeling_bg:n_frames_modeling_bg+100],mean,std,alpha,n_frames_modeling_bg)
 
     # Segment foreground and background with the model obtained before
     labels = segment_fg_bg(frames[n_frames_modeling_bg:], n_frames_modeling_bg, mean, std, alpha, plot_results=plot_results)
