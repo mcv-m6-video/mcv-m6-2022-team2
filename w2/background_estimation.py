@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from utils import plotBBox, read_frames
 from dataset_gestions import update_labels
 
-def single_gaussian_estimation(frames_paths, alpha=0.2, plot_results=True):
+def single_gaussian_estimation(frames_paths, alpha=0.2, plot_results=False):
     """
     It is the MOTHER FUNCTION. It estimates the background and foreground, computes the bounding boxes
     from the masks with several techniques and returns the labels dictionary of lists updated.
@@ -162,7 +162,7 @@ def extract_bboxes_from_bg(bg_preprocessed):
     bboxes = []
     for stat in stats:
         # Filter for area, if below that region, we drop the bbox
-        if stat[4] > 50:
+        if stat[4] > 500:
             bboxes.append([stat[0], stat[1], stat[2], stat[3]])  # x, y, h, w
 
     # todo: Drop last bbox, it represents all the image. No se si hará petar el codigo para cuando no hay...
