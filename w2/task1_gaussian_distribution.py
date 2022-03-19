@@ -15,6 +15,6 @@ os.makedirs('variables', exist_ok=True)
 frames_paths = get_frames_paths(path_video)
 
 # Estimates bg with gaussian estimation
-single_gaussian_estimation(frames_paths)
+labels = single_gaussian_estimation(frames_paths)
 
 

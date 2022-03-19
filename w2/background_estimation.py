@@ -6,8 +6,17 @@ from os.path import exists
 from utils import plot_gaussian_single_pixel
 from matplotlib import pyplot as plt
 from utils import plotBBox, read_frames
+from dataset_gestions import update_labels
 
 def single_gaussian_estimation(frames_paths, alpha=2, plot_results=False):
+    """
+    It is the MOTHER FUNCTION. It estimates the background and foreground, computes the bounding boxes
+    from the masks with several techniques and returns the labels dictionary of lists updated.
+    :param frames_paths: paths where are located all the frames
+    :param alpha: parameter to threshold the gaussian of each frame and be more permisive or not
+    :param plot_results: true to plot some results
+    :return: labels: labels dictionary of lists updated, where are all the bboxes, confidence, etc.
+    """
 
     # Read all frames from the paths
     frames = read_frames(frames_paths)
@@ -19,11 +28,13 @@ def single_gaussian_estimation(frames_paths, alpha=2, plot_results=False):
     mean, std = model_bg_single_gaussian(frames[:n_frames_modeling_bg])
 
     # Segment foreground and background with the model obtained before
-    segment_fg_bg(frames[n_frames_modeling_bg:], mean, std, alpha=0.3)
+    labels = segment_fg_bg(frames[n_frames_modeling_bg:], n_frames_modeling_bg, mean, std, alpha=0.3, plot_results=plot_results)
 
     # If plot results is true, plot graphics
-    if plot_results:
-        plot_gaussian_single_pixel(mean, std, pixel=[256, 234])
+    # if plot_results:
+    #    plot_gaussian_single_pixel(mean, std, pixel=[256, 234])
+
+    return labels
 
 
 def model_bg_single_gaussian(frames):
@@ -57,6 +68,14 @@ def model_bg_single_gaussian(frames):
 
 
 def bg_single_gaussian_frame(frame, mean, std, alpha):
+    """
+    Generate the bg and fg mask for a single frame
+    :param frame: img frame
+    :param mean: mean img
+    :param std: std image
+    :param alpha: parameter to threshold the detection
+    :return: mask: 0 if bg, 255 if fg
+    """
 
     # Background is the same shape as frame
     mask = np.zeros_like(frame)
@@ -71,17 +90,21 @@ def bg_single_gaussian_frame(frame, mean, std, alpha):
     return mask
 
 
-def segment_fg_bg(frames, mean, std, alpha, plot_results=False):
+def segment_fg_bg(frames, n_frames_modeling_bg, mean, std, alpha, plot_results=False):
     """
     Compute background and foreground for all frames.
     :param frames: Variable where all the frames are stacked
+    :param n_frames_modeling_bg: number of the frames of the first 25% of the test sequence to model background
     :param mean: Mean image of the first 25% frames
     :param std: Std image of the first 25% frames
     :param alpha: Parameter to control thresholding on the gaussian estimation
-    :return: todo: ?????
+    :return: labels: dictionary of all the detections with bboxes, confidence=1, etc. as in week1
     """
+
+    labels = {}
+
     print('Segmenting foreground and background...')
-    for frame in tqdm(frames):
+    for idx_frame, frame in enumerate(tqdm(frames)):
         # Compute mask for each frame
         bg = bg_single_gaussian_frame(frame, mean, std, alpha)
 
@@ -91,11 +114,20 @@ def segment_fg_bg(frames, mean, std, alpha, plot_results=False):
         # Computes bboxes from the mask preprocessed of the frame
         bboxes, stats = extract_bboxes_from_bg(bg_preprocessed)
 
+        # Upload bboxes in dictionary of detections
+        for x_top_left, y_top_left, weight, height in bboxes:
+            labels = update_labels(labels, idx_frame + n_frames_modeling_bg,
+                                             x_top_left, y_top_left, x_top_left + weight, y_top_left + height, 1.)
+
         if plot_results:
             frame = plotBBox([frame], 0, 1, predicted=stats[:,:4])
             plt.imshow(frame[0])
             plt.pause(0.05)
             # TODO, gráfico mostrando la media y alpha*(2+std) de un pixel y su valor a lo largo del tiempo: x=681 y=646
+
+    print('Finished!')
+
+    return labels
 
 
 def preprocess_mask(bg):
@@ -104,6 +136,7 @@ def preprocess_mask(bg):
     :param bg: mask of the bg and fg
     :return: bg_closed: preprocessed bg and fg
     """
+
     bg_opened = cv2.morphologyEx(bg, cv2.MORPH_OPEN, kernel=np.ones((5, 5), np.uint8))
     bg_closed = cv2.morphologyEx(bg_opened, cv2.MORPH_CLOSE, kernel=np.ones((30, 30), np.uint8))
 
@@ -116,6 +149,7 @@ def extract_bboxes_from_bg(bg_preprocessed):
     :param bg_preprocessed: mask preprocessed
     :return: list of bboxes
     """
+
     # Compute connected components. Stats: [xL, yL, w, h, area]
     (_, components, stats, _) = cv2.connectedComponentsWithStats(bg_preprocessed)
 
