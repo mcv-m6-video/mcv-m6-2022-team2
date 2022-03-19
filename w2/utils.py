@@ -39,7 +39,6 @@ def plotBBox(imgs, initalFrame, finalFrame, **labels):
     COLORS=[(0,255,0), (0,0,255)]
     for frame_num in range(initalFrame, finalFrame):
         im = imgs[frame_num]
-        print(labels)
         for idx, (name, labels_total) in enumerate(labels.items()):
             labels_total
             for bbox in labels_total:

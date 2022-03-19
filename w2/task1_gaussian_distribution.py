@@ -22,7 +22,7 @@ os.makedirs('variables', exist_ok=True)
 frames_paths = get_frames_paths(path_video)
 
 # Estimates bg with gaussian estimation
-labels = single_gaussian_estimation(frames_paths)
+labels = single_gaussian_estimation(frames_paths, alpha=5,plot_results=True)
 
 # todo: Eval model: first drop the frames that has been used to estimate the model. estoy en ello
 n_frames_modeling_bg = round(len(frames_paths) * 0.25)
