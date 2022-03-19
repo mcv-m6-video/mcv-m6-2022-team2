@@ -168,3 +168,6 @@ def extract_bboxes_from_bg(bg_preprocessed):
     # todo: Drop last bbox, it represents all the image. No se si hará petar el codigo para cuando no hay...
 
     return bboxes, stats
+
+
+#def change_new_params_gaussian()

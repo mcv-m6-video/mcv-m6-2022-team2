@@ -74,5 +74,16 @@ def read_frames(frames_paths):
 
     return frames
 
+def plot_precision_recall_one_class(prec, recall, ap, info):
+    """
+    Plot precision and recall
+    :param prec
+    :param recall
+    :param ap
+    """
+    plt.plot(prec, recall)
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title(f'Precision vs recall in model {info} with AP: {ap}')
+    plt.show()
 
-# todo: grafica segun alpha vs map
