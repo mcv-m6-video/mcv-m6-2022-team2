@@ -73,3 +73,6 @@ def read_frames(frames_paths):
             pickle.dump(frames, f)
 
     return frames
+
+
+# todo: grafica segun alpha vs map
