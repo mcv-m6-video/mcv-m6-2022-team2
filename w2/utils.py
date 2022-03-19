@@ -1,8 +1,11 @@
- import scipy.stats as stats
+import scipy.stats as stats
 import math
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
+from os.path import exists
+import pickle
+import tqdm
 
 def plot_gaussian_single_pixel(mean, std, pixel):
     """
@@ -23,6 +26,15 @@ def plot_gaussian_single_pixel(mean, std, pixel):
     plt.show()
     
 def plotBBox(imgs, initalFrame, finalFrame, **labels):
+    """
+    plots bboxes in a frame
+    todo: comentar igor (no he hecho yo la funcion)
+    :param imgs:
+    :param initalFrame:
+    :param finalFrame:
+    :param labels:
+    :return:
+    """
     frames = []
     COLORS=[(0,255,0), (0,0,255)]
     for frame_num in range(initalFrame, finalFrame):
@@ -35,5 +47,29 @@ def plotBBox(imgs, initalFrame, finalFrame, **labels):
                 im = cv2.rectangle(img=im, pt1=(bbox[0], bbox[1]), pt2=(bbox[0] + bbox[2], bbox[1] + bbox[3]), color=COLORS[idx], thickness=2)
 
         frames.append(im)
+
+    return frames
+
+
+def read_frames(frames_paths):
+    """
+    Reads all frames and store them in a pickle in order to be more efficient
+    :param frames_paths:
+    :return: frames: variable with all the frames stacked
+    """
+    if exists('variables/frames.pickle'):
+        with open('variables/frames.pickle', 'rb') as f:
+            frames = pickle.load(f)
+    else:
+        frames = []
+        print('reading frames and storing them in variables/frames.pickle in order to be more efficient...')
+        for f_path in frames_paths:
+            frame = cv2.imread(f_path)
+            frame_bw = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            frames.append(frame_bw)
+
+        frames = np.array(frames)
+        with open('variables/frames.pickle', 'wb') as f:
+            pickle.dump(frames, f)
 
     return frames
