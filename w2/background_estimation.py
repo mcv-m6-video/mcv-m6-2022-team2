@@ -8,7 +8,8 @@ from matplotlib import pyplot as plt
 from utils import plotBBox, read_frames
 from dataset_gestions import update_labels
 
-def single_gaussian_estimation(frames_paths, alpha=0.2, plot_results=False):
+
+def single_gaussian_estimation(frames_paths, alpha=0.15, rho=0, make_estimation_adaptive=False, plot_results=False):
     """
     It is the MOTHER FUNCTION. It estimates the background and foreground, computes the bounding boxes
     from the masks with several techniques and returns the labels dictionary of lists updated.
@@ -28,7 +29,8 @@ def single_gaussian_estimation(frames_paths, alpha=0.2, plot_results=False):
     mean, std = model_bg_single_gaussian(frames[:n_frames_modeling_bg])
 
     # Segment foreground and background with the model obtained before
-    labels = segment_fg_bg(frames[n_frames_modeling_bg:], n_frames_modeling_bg, mean, std, alpha, plot_results=plot_results)
+    labels = segment_fg_bg(frames[n_frames_modeling_bg:], n_frames_modeling_bg, mean, std, alpha, rho,
+                           make_estimation_adaptive=make_estimation_adaptive, plot_results=plot_results)
 
     # If plot results is true, plot graphics
     # if plot_results:
@@ -90,7 +92,8 @@ def bg_single_gaussian_frame(frame, mean, std, alpha):
     return mask
 
 
-def segment_fg_bg(frames, n_frames_modeling_bg, mean, std, alpha, plot_results=True):
+def segment_fg_bg(frames, n_frames_modeling_bg, mean, std, alpha, rho, make_estimation_adaptive=False,
+                  plot_results=True):
     """
     Compute background and foreground for all frames.
     :param frames: Variable where all the frames are stacked
@@ -105,11 +108,18 @@ def segment_fg_bg(frames, n_frames_modeling_bg, mean, std, alpha, plot_results=T
 
     print('Segmenting foreground and background...')
     for idx_frame, frame in enumerate(tqdm(frames)):
+
         # Compute mask for each frame
         bg = bg_single_gaussian_frame(frame, mean, std, alpha)
 
+        if make_estimation_adaptive:
+            mean, std = change_gaussian_parameters(frame, bg, rho, mean, std)
+
         # Morphological operations to filter noise and make a more robust result
         bg_preprocessed = preprocess_mask(bg)
+
+        """plt.imshow(bg_preprocessed)
+        plt.pause(0.01)"""
 
         # Computes bboxes from the mask preprocessed of the frame
         bboxes, stats = extract_bboxes_from_bg(bg_preprocessed)
@@ -117,13 +127,12 @@ def segment_fg_bg(frames, n_frames_modeling_bg, mean, std, alpha, plot_results=T
         # Upload bboxes in dictionary of detections
         for x_top_left, y_top_left, weight, height in bboxes:
             labels = update_labels(labels, idx_frame + n_frames_modeling_bg,
-                                             x_top_left, y_top_left, x_top_left + weight, y_top_left + height, 1.)
+                                   x_top_left, y_top_left, x_top_left + weight, y_top_left + height, 1.)
 
         if plot_results:
-            frame = plotBBox([frame], 0, 1, predicted=stats[:,:4])
+            frame = plotBBox([frame], 0, 1, predicted=stats[:, :4])
             plt.imshow(frame[0])
             plt.pause(0.05)
-            # TODO, gráfico mostrando la media y alpha*(2+std) de un pixel y su valor a lo largo del tiempo: x=681 y=646
 
     plt.show()
 
@@ -157,17 +166,28 @@ def extract_bboxes_from_bg(bg_preprocessed):
 
     # Sorted by area: The largest, at the end.
     stats = stats[stats[:, 4].argsort()]
+    # todo: cambiar de orden las bboxes y organizarlas al reves?
 
     # Save all the bboxes from that frame.
     bboxes = []
     for stat in stats:
         # Filter for area, if below that region, we drop the bbox
-        if stat[4] > 500:
+        if stat[4] > 1500:
             bboxes.append([stat[0], stat[1], stat[2], stat[3]])  # x, y, h, w
 
-    # todo: Drop last bbox, it represents all the image. No se si hará petar el codigo para cuando no hay...
+    # Drop last bbox, it represents all the image.
+    bboxes = bboxes[:-1]
 
     return bboxes, stats
 
 
-#def change_new_params_gaussian()
+def change_gaussian_parameters(frame, mask, rho, mean, std):
+
+    # If the pixel belongs to the background...
+    [pos_x, pos_y] = np.where(mask == 0)
+
+    # recompute mean and std in all the positions where the pixel belongs to the background
+    mean[pos_x, pos_y] = rho * frame[pos_x, pos_y] + (1 - rho) * mean[pos_x, pos_y]
+    std[pos_x, pos_y] = rho * np.square(frame[pos_x, pos_y] - mean[pos_x, pos_y]) + (1 - rho) * std[pos_x, pos_y]
+
+    return mean, std
