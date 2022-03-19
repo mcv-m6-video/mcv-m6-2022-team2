@@ -5,8 +5,9 @@ import pickle
 from os.path import exists
 from utils import plot_gaussian_single_pixel
 from matplotlib import pyplot as plt
-from utils import plotBBox, read_frames
+from utils import plotBBox, read_frames, plot_pixel_detection
 from dataset_gestions import update_labels
+import os
 
 
 def single_gaussian_estimation(frames_paths, alpha=0.15, rho=0, make_estimation_adaptive=False, plot_results=False):
@@ -27,6 +28,9 @@ def single_gaussian_estimation(frames_paths, alpha=0.15, rho=0, make_estimation_
 
     # Model the bg as a single gaussian
     mean, std = model_bg_single_gaussian(frames[:n_frames_modeling_bg])
+
+    if plot_results and not exists('task1_plots'):
+        plot_pixel_detection(frames[n_frames_modeling_bg:n_frames_modeling_bg+100],mean,std,alpha,n_frames_modeling_bg)
 
     # Segment foreground and background with the model obtained before
     labels = segment_fg_bg(frames[n_frames_modeling_bg:], n_frames_modeling_bg, mean, std, alpha, rho,

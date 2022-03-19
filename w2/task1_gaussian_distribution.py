@@ -22,6 +22,10 @@ ground_truth = load_labels(path_gt, 'w1_annotations.xml')  # ground_truth = load
 # Create frames if not created and get its paths
 frames_paths = get_frames_paths(path_video)
 
+# Estimates bg with gaussian estimation
+labels = single_gaussian_estimation(frames_paths, alpha=5)
+
+# todo: Eval model: first drop the frames that has been used to estimate the model. estoy en ello
 # drop the frames that have been used to estimate the model.
 n_frames_modeling_bg = round(len(frames_paths) * 0.25)
 keys = range(87, 87+n_frames_modeling_bg)
