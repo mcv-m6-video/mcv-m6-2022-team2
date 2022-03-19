@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from utils import plotBBox, read_frames
 from dataset_gestions import update_labels
 
-def single_gaussian_estimation(frames_paths, alpha=2, plot_results=False):
+def single_gaussian_estimation(frames_paths, alpha=0.2, plot_results=True):
     """
     It is the MOTHER FUNCTION. It estimates the background and foreground, computes the bounding boxes
     from the masks with several techniques and returns the labels dictionary of lists updated.
@@ -28,7 +28,7 @@ def single_gaussian_estimation(frames_paths, alpha=2, plot_results=False):
     mean, std = model_bg_single_gaussian(frames[:n_frames_modeling_bg])
 
     # Segment foreground and background with the model obtained before
-    labels = segment_fg_bg(frames[n_frames_modeling_bg:], n_frames_modeling_bg, mean, std, alpha=0.3, plot_results=plot_results)
+    labels = segment_fg_bg(frames[n_frames_modeling_bg:], n_frames_modeling_bg, mean, std, alpha, plot_results=plot_results)
 
     # If plot results is true, plot graphics
     # if plot_results:
@@ -90,7 +90,7 @@ def bg_single_gaussian_frame(frame, mean, std, alpha):
     return mask
 
 
-def segment_fg_bg(frames, n_frames_modeling_bg, mean, std, alpha, plot_results=False):
+def segment_fg_bg(frames, n_frames_modeling_bg, mean, std, alpha, plot_results=True):
     """
     Compute background and foreground for all frames.
     :param frames: Variable where all the frames are stacked
@@ -124,6 +124,8 @@ def segment_fg_bg(frames, n_frames_modeling_bg, mean, std, alpha, plot_results=F
             plt.imshow(frame[0])
             plt.pause(0.05)
             # TODO, gráfico mostrando la media y alpha*(2+std) de un pixel y su valor a lo largo del tiempo: x=681 y=646
+
+    plt.show()
 
     print('Finished!')
 
