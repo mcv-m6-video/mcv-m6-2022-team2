@@ -1,4 +1,4 @@
-import scipy.stats as stats
+ import scipy.stats as stats
 import math
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,11 +22,11 @@ def plot_gaussian_single_pixel(mean, std, pixel):
     plt.plot(x, stats.norm.pdf(x, mu, sigma))
     plt.show()
     
-def plotBBox(img_path, initalFrame, finalFrame, **labels):
+def plotBBox(imgs, initalFrame, finalFrame, **labels):
     frames = []
     COLORS=[(0,255,0), (0,0,255)]
     for frame_num in range(initalFrame, finalFrame):
-        im = cv2.imread(img_path[frame_num])
+        im = imgs[frame_num]
         print(labels)
         for idx, (name, labels_total) in enumerate(labels.items()):
             labels_total
