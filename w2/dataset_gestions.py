@@ -18,6 +18,7 @@ def update_labels(labels, frame_id, xmin, ymin, xmax, ymax, confidence):
     :return: labels: dictionary of all the labels uploaded with the parameters in question
     """
     frame_name = '%04d' % int(frame_id)
+    
     obj_info = dict(
         name='car',
         bbox=[xmin, ymin, xmax, ymax],
@@ -69,7 +70,7 @@ def load_labels(path, name):
                     continue
                 for bbox in child.getchildren():
                     frame_id, xmin, ymin, xmax, ymax, _, _, _ = list(map(float, ([v for k, v in bbox.attrib.items()])))
-                    update_labels(labels, int(frame_id) + 1, xmin, ymin, xmax, ymax, 1.)
+                    update_labels(labels, int(frame_id), xmin, ymin, xmax, ymax, 1.)
 
         return labels
 
@@ -100,7 +101,7 @@ def get_frames_paths(path_frames):
         parent_dir = os.path.abspath(os.path.join(path_frames, os.pardir))      # Obtain parent directory
         capture = cv2.VideoCapture(f'{parent_dir}/vdo.avi')                     # Create Capture object
         n_frames = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))                   # Obtain number of frames
-        frame_counter = 1                                                       # Variable to count frames
+        frame_counter = 0                                                       # Variable to count frames
         loop = tqdm(range(n_frames), total=n_frames)                            # Progress bar
 
         while capture.isOpened():                                               # Loop through the video frames

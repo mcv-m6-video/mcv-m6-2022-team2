@@ -42,5 +42,5 @@ for alpha_value in alpha:
     labels = single_gaussian_estimation(frames, alpha=alpha_value)
 
     # Evaluate model
-    recall, precision, ap = evaluation_single_class(ground_truth_list, labels, train_frames+1)
+    recall, precision, ap = evaluation_single_class(ground_truth_list, labels, train_frames)
     print(f'AP computed is: {round(ap, 4)}')
