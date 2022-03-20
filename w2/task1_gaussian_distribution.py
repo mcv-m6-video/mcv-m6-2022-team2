@@ -3,53 +3,44 @@ import numpy as np
 from dataset_gestions import get_frames_paths, load_labels
 from background_estimation import single_gaussian_estimation
 from metric_functions import evaluation_single_class
-from utils import plot_precision_recall_one_class
+from utils import plot_precision_recall_one_class, read_frames
 import os
 import pickle
 
-# Directions where all the sequence is located
-path_data = '../../data/AICity_data/train/S03/c010'
-
-# Direction where all the ground truth annotations are located
-path_gt = path_data + '/gt'
-
-# Direction where the video of the sequence is located
-path_video = path_data + '/vdo'
+path_data = '../../data/AICity_data/train/S03/c010' # Directions where all the sequence is located
+path_gt = path_data + '/gt' # Direction where all the ground truth annotations are located
+path_video = path_data + '/vdo' # Direction where the video of the sequence is located
 
 # Load and update ground truth labels
 ground_truth = load_labels(path_gt, 'w1_annotations.xml')  # ground_truth = load_labels(path_gt, 'gt.txt')
 
-# Create frames if not created and get its paths
-frames_paths = get_frames_paths(path_video)
+frames_paths = get_frames_paths(path_video) # Extract frames from video and get its paths
+frames = np.array(read_frames(frames_paths)) # Read all frames from the paths
 
 # Estimates bg with gaussian estimation
-labels = single_gaussian_estimation(frames_paths, alpha=5)
+""" labels = single_gaussian_estimation(frames, alpha=5) """
 
-# todo: Eval model: first drop the frames that has been used to estimate the model. estoy en ello
-# drop the frames that have been used to estimate the model.
-n_frames_modeling_bg = round(len(frames_paths) * 0.25)
-keys = range(87, 87+n_frames_modeling_bg)
-keys_groundTruth = []
-for key in keys:
-    if key < 100:
-        keys_groundTruth = np.append(keys_groundTruth, '00' + str(key))
-    else:
-        keys_groundTruth = np.append(keys_groundTruth, '0' + str(key))
+# Drop the frames that have been used to estimate the model.
+train_frames = round(frames.shape[0] * 0.25)
 
-for key_groundTruth in keys_groundTruth:
-    del ground_truth[key_groundTruth]
-frames_paths_cropped = frames_paths[n_frames_modeling_bg:]
+ground_truth_keys = list(ground_truth.keys())
+ground_truth_keys.sort()
+
+ground_truth_list = []
+for key in ground_truth_keys[train_frames:]:
+    ground_truth_list.append(ground_truth[key])
+    
 
 # Create variables dir where we will put variables to save computations
 os.makedirs('variables', exist_ok=True)
 
-alpha = [0.1, 0.2, 0.3]
+alpha = [5]
 
 for alpha_value in alpha:
-    print(f'estimating bg with alpha: {alpha_value}...')
+    print(f'estimating background with alpha: {alpha_value}...')
     # Estimates bg with gaussian estimation
-    labels = single_gaussian_estimation(frames_paths, alpha=alpha_value)
+    labels = single_gaussian_estimation(frames, alpha=alpha_value)
 
     # Evaluate model
-    recall, precision, ap = evaluation_single_class(ground_truth, frames_paths_cropped, labels)
+    recall, precision, ap = evaluation_single_class(ground_truth_list, labels, train_frames+1)
     print(f'AP computed is: {round(ap, 4)}')

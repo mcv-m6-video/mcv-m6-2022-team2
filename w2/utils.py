@@ -75,39 +75,40 @@ def read_frames(frames_paths):
     return frames
 
 def plot_pixel_detection(frames,mean,std,alpha,n_frames):
-    os.makedirs('task1_plots/frames')
-    os.makedirs('task1_plots/plot_mean')
-    
-    print(frames.shape)
-    for idx, frame in tqdm(enumerate(frames)):
-        mean_px = mean[646,681]
-        std_px = std[646,681]
-        mean_px = np.repeat([mean_px],100)
-        std_px = np.repeat([std_px],100)
-        x = np.arange(n_frames,n_frames+100)
+    if not exists('task1_plots'):
+        os.makedirs('task1_plots/frames')
+        os.makedirs('task1_plots/plot_mean')
         
-        frame_aux = frame.copy()
-        frame_aux = cv2.cvtColor(frame_aux, cv2.COLOR_GRAY2BGR)
-
-        frame_aux = cv2.rectangle(img=frame_aux, pt1=(626, 661), pt2=(666, 701), color=(0,0,255), thickness=10)
-        
-        if idx < 10:
-            idx_txt = '0' + str(idx)
-        else:
-            idx_txt = str(idx)
+        for idx, frame in tqdm(enumerate(frames)):
+            mean_px = mean[646,681]
+            std_px = std[646,681]
+            mean_px = np.repeat([mean_px],100)
+            std_px = np.repeat([std_px],100)
+            x = np.arange(n_frames,n_frames+100)
             
-        cv2.imwrite("task1_plots/frames/frame_" + idx_txt + '.png',frame_aux)
+            frame_aux = frame.copy()
+            frame_aux = cv2.cvtColor(frame_aux, cv2.COLOR_GRAY2BGR)
+
+            frame_aux = cv2.rectangle(img=frame_aux, pt1=(626, 661), pt2=(666, 701), color=(0,0,255), thickness=10)
+            
+            if idx < 10:
+                idx_txt = '0' + str(idx)
+            else:
+                idx_txt = str(idx)
+                
+            cv2.imwrite("task1_plots/frames/frame_" + idx_txt + '.png',frame_aux)
+            
+            plt.plot(x,mean_px,color='black', label="Pixel's mean")
+            plt.plot(x,mean_px + alpha * (2 + std_px), linestyle='--',color='blue',label="Detection threshold")
+            plt.plot(x,mean_px - alpha * (2 + std_px), linestyle='--',color='blue')
+            plt.plot(x[:idx+1],frames[:idx+1,646,681],color="red",label="Pixel's value")
+            plt.ylim(0,255)
+            plt.xlabel("Frame")
+            plt.ylabel("Grayscale value")
+            if idx == 0:
+                plt.legend()
+            plt.savefig("task1_plots/plot_mean/frame_" + idx_txt + '.png')
         
-        plt.plot(x,mean_px,color='black', label="Pixel's mean")
-        plt.plot(x,mean_px + alpha * (2 + std_px), linestyle='--',color='blue',label="Detection threshold")
-        plt.plot(x,mean_px - alpha * (2 + std_px), linestyle='--',color='blue')
-        plt.plot(x[:idx+1],frames[:idx+1,646,681],color="red",label="Pixel's value")
-        plt.ylim(0,255)
-        plt.xlabel("Frame")
-        plt.ylabel("Grayscale value")
-        if idx == 0:
-            plt.legend()
-        plt.savefig("task1_plots/plot_mean/frame_" + idx_txt + '.png')
 def plot_precision_recall_one_class(prec, recall, ap, info):
     """
     Plot precision and recall
