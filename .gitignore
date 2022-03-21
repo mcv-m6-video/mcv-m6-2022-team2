@@ -2,6 +2,7 @@
 ../AICity_data/
 data_stereo_flow/
 results_opticalflow_kitti/
+week2/variablest    
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

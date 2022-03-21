@@ -119,10 +119,11 @@ def process_ground_truths(ground_truths, frames_index,class_name):
 
     class_recs = {}
     npos = 0
-    for idx,ground_truth_frame in enumerate(ground_truths,frames_index):
+    for idx,ground_truth_frame in enumerate(ground_truths, frames_index):
         det = []
         bboxes = []
         for obj in ground_truth_frame:
+            print(obj)
             if obj['name'] == class_name:
                 bboxes.append(obj['bbox'])
                 det.append(False)
