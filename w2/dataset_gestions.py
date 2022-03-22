@@ -68,9 +68,11 @@ def load_labels(path, name):
                 # Only take into account 'cars'
                 if child.attrib['label'] not in 'car':
                     continue
+                
                 for bbox in child.getchildren():
-                    frame_id, xmin, ymin, xmax, ymax, _, _, _ = list(map(float, ([v for k, v in bbox.attrib.items()])))
-                    update_labels(labels, int(frame_id), xmin, ymin, xmax, ymax, 1.)
+                    if bbox.getchildren()[0].text == 'false': # Car is parked
+                        frame_id, xmin, ymin, xmax, ymax, _, _, _ = list(map(float, ([v for k, v in bbox.attrib.items()])))
+                        update_labels(labels, int(frame_id), xmin, ymin, xmax, ymax, 1.)
 
         return labels
 

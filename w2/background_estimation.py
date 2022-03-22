@@ -92,10 +92,12 @@ def background_mask(frame, mean, std, alpha):
 
     # Perform background and foreground substraction
     diff = frame - mean
-    foreground_idx = np.where(abs(diff) > alpha * (2 + std))
+    foreground_idx = np.where(abs(diff) >= alpha * (2 + std))
 
     # If pixel is classified as foreground, assign a 255 to it. If not, pixel is bg and remains at 0.
     mask[foreground_idx[0], foreground_idx[1]] = 255
+    
+
 
     return mask
 

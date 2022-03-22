@@ -25,12 +25,12 @@ for key in ground_truth_keys:
 # Drop the frames that have been used to estimate the model.
 train_frames = 0
 
-ground_truth_keys = list(ground_truth.keys())
-ground_truth_keys.sort()
-
 ground_truth_list = []
-for key in ground_truth_keys[train_frames:]:
-    ground_truth_list.append(ground_truth[key])
+for idx in range(train_frames,frames.shape[0]):
+    if f'{idx:04}' in ground_truth:
+        ground_truth_list.append(ground_truth[f'{idx:04}'])
+    else:
+        ground_truth_list.append([])
 
 ALGORITHM = 'MOG2'
 
@@ -55,7 +55,7 @@ while True:
     fgMask[fgMask!=255] = 0
 
     kernel = np.ones((5, 5), np.uint8)
-    fgMask = preprocess_mask(fgMask)
+    """ fgMask = preprocess_mask(fgMask) """
 
     bboxes = foreground_bboxes(fgMask)
     if not bboxes:
@@ -64,7 +64,7 @@ while True:
         frame = plotBBox([frame], 0, 1, background=bboxes)[0]
         labels = update_labels(labels, counter, bbox[0], bbox[1], bbox[0] + bbox[2], bbox[1] + bbox[3], 1)
 
-    cv2.imshow('frame', frame)
+    """ cv2.imshow('frame', frame) """
 
     keyboard = cv2.waitKey(30)
     if keyboard == 'q' or keyboard == 27:

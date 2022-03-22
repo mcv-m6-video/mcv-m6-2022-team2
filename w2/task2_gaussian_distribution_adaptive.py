@@ -27,12 +27,12 @@ frames = np.array(read_frames(frames_paths)) # Read all frames from the paths
 # Drop the frames that have been used to estimate the model.
 train_frames = round(frames.shape[0] * 0.25)
 
-ground_truth_keys = list(ground_truth.keys())
-ground_truth_keys.sort()
-
 ground_truth_list = []
-for key in ground_truth_keys[train_frames:]:
-    ground_truth_list.append(ground_truth[key])
+for idx in range(train_frames,frames.shape[0]):
+    if f'{idx:04}' in ground_truth:
+        ground_truth_list.append(ground_truth[f'{idx:04}'])
+    else:
+        ground_truth_list.append([])
 
 # Create variables dir where we will put variables to save computations
 os.makedirs('variables', exist_ok=True)
