@@ -29,7 +29,7 @@ def single_gaussian_estimation(frames, alpha=0.15, rho=0, adaptive=False, plot_r
     # Segment foreground and background with the model obtained before
     labels = segmentation(segmenting_frames, n_frames, mean, std, alpha, rho,
                            adaptive=adaptive, plot_results=plot_results)
-    
+
     if plot_results:
         plot_frames = frames[n_frames:n_frames+100]
         plot_pixel_detection(plot_frames,mean,std,alpha,n_frames)
@@ -87,8 +87,15 @@ def background_mask(frame, mean, std, alpha):
     :return: mask: 0 if bg, 255 if fg
     """
 
-    mask = np.zeros_like(frame)     # Background is the same shape as frame
-    mask[np.abs(frame - mean) > alpha * (2 + std)] = 255     # Background and foreground substraction
+    # Background is the same shape as frame
+    mask = np.zeros_like(frame)
+
+    # Perform background and foreground substraction
+    diff = frame - mean
+    foreground_idx = np.where(abs(diff) > alpha * (2 + std))
+
+    # If pixel is classified as foreground, assign a 255 to it. If not, pixel is bg and remains at 0.
+    mask[foreground_idx[0], foreground_idx[1]] = 255
 
     return mask
 
@@ -140,6 +147,8 @@ def segmentation(frames, n_frames, mean, std, alpha, rho, adaptive=False, plot_r
             plt.imshow(frame[0])
             plt.pause(0.05)
 
+    plt.show()
+
     print('Finished!')
 
     return labels
@@ -154,6 +163,11 @@ def foreground_bboxes(bg_preprocessed):
     # Compute connected components. Stats: [xL, yL, w, h, area]
     _, _, stats, _ = cv2.connectedComponentsWithStats(bg_preprocessed)
 
+    # Sorted by area: The largest, at the end.
+    stats = stats[stats[:, 4].argsort()]
+    # todo: cambiar de orden las bboxes y organizarlas al reves?
+
+    # Save all the bboxes from that frame.
     bboxes = []
     for stat in stats[1:]: # First connected components corresponds to the background
         if stat[4] > 100:  # Filter minimum area
