@@ -123,7 +123,6 @@ def process_ground_truths(ground_truths, frames_index,class_name):
         det = []
         bboxes = []
         for obj in ground_truth_frame:
-            print(obj)
             if obj['name'] == class_name:
                 bboxes.append(obj['bbox'])
                 det.append(False)

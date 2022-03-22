@@ -34,7 +34,7 @@ for key in ground_truth_keys[train_frames:]:
 # Create variables dir where we will put variables to save computations
 os.makedirs('variables', exist_ok=True)
 
-alpha = [5]
+alpha = [1, 3, 4, 5, 6, 7, 9]
 
 for alpha_value in alpha:
     print(f'estimating background with alpha: {alpha_value}...')

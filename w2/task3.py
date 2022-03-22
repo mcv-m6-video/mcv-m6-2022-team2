@@ -52,13 +52,13 @@ while True:
     fgMask = preprocess_mask(fgMask)
 
     bboxes = foreground_bboxes(fgMask)
-    if not bboxes:
-        labels = update_labels(labels, counter, 2, 2, 2, 2, 1)
+    #if not bboxes:
+    #    labels = update_labels(labels, counter, 2, 2, 2, 2, 1)
     for bbox in bboxes:
         frame = plotBBox([frame], 0, 1, background=bboxes)[0]
         labels = update_labels(labels, counter, bbox[0], bbox[1], bbox[0]+bbox[2], bbox[1]+bbox[3], 1)
 
-    cv2.imshow('frame', frame)
+    #cv2.imshow('frame', frame)
 
     keyboard = cv2.waitKey(30)
     if keyboard == 'q' or keyboard == 27:
