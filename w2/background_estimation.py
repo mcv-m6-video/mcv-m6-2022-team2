@@ -27,12 +27,12 @@ def single_gaussian_estimation(frames, alpha=0.15, rho=0, adaptive=False, plot_r
     mean, std = mean_std(training_frames)   # Model the background as a single gaussian (mean, std)
 
     # Segment foreground and background with the model obtained before
-    labels = segmentation(segmenting_frames, n_frames, mean, std, alpha, rho,
+    labels, mean_history, std_history = segmentation(segmenting_frames, n_frames, mean, std, alpha, rho,
                            adaptive=adaptive, plot_results=plot_results)
 
     if plot_results:
         plot_frames = frames[n_frames:n_frames+100]
-        plot_pixel_detection(plot_frames,mean,std,alpha,n_frames)
+        plot_pixel_detection(plot_frames,mean_history,std_history,alpha,n_frames)
 
     return labels
 
@@ -128,6 +128,9 @@ def segmentation(frames, n_frames, mean, std, alpha, rho, adaptive=False, plot_r
     labels = {}
 
     print('Segmenting foreground and background...')
+    mean_history = np.array([mean])
+    std_history = np.array([std])
+    
     for idx_frame, frame in enumerate(tqdm(frames)):
 
         mask = background_mask(frame, mean, std, alpha)   # Compute the mask of the frame
@@ -135,6 +138,10 @@ def segmentation(frames, n_frames, mean, std, alpha, rho, adaptive=False, plot_r
         if adaptive:
             mean, std = adaptive_mean_std(frame, mask, rho, mean, std)
             mask = background_mask(frame, mean, std, alpha)   # Recompute the mask of the frame
+        
+        mean_history = np.vstack((mean_history,np.array([mean])))
+        std_history  = np.vstack((std_history, np.array([std])))
+            
 
         mask = preprocess_mask(mask) # Morphological operations to filter noise and make a more robust result
         bboxes = foreground_bboxes(mask) # Computes bboxes from the mask
@@ -149,11 +156,10 @@ def segmentation(frames, n_frames, mean, std, alpha, rho, adaptive=False, plot_r
             plt.imshow(frame[0])
             plt.pause(0.05)
 
-    plt.show()
 
     print('Finished!')
 
-    return labels
+    return labels, mean_history, std_history
 
 def foreground_bboxes(bg_preprocessed):
     """

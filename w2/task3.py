@@ -55,7 +55,7 @@ while True:
     fgMask[fgMask!=255] = 0
 
     kernel = np.ones((5, 5), np.uint8)
-    """ fgMask = preprocess_mask(fgMask) """
+    fgMask = preprocess_mask(fgMask)
 
     bboxes = foreground_bboxes(fgMask)
     if not bboxes:

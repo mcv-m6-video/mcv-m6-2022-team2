@@ -38,7 +38,7 @@ for idx in range(train_frames,frames.shape[0]):
 os.makedirs('variables', exist_ok=True)
 
 # Estimates bg with gaussian estimation
-labels = single_gaussian_estimation(frames, alpha=5, rho=0.05,adaptive=True)
+labels = single_gaussian_estimation(frames, alpha=5, rho=0.01,adaptive=True)
 
 # Evaluate model
 recall, precision, ap = evaluation_single_class(ground_truth_list, labels, train_frames+1)
