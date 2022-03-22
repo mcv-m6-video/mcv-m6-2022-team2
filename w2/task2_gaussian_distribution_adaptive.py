@@ -38,7 +38,7 @@ for key in ground_truth_keys[train_frames:]:
 os.makedirs('variables', exist_ok=True)
 
 # Estimates bg with gaussian estimation
-labels = single_gaussian_estimation(frames, alpha=5, rho=0.5,adaptive=True)
+labels = single_gaussian_estimation(frames, alpha=5, rho=0.05,adaptive=True)
 
 # Evaluate model
 recall, precision, ap = evaluation_single_class(ground_truth_list, labels, train_frames+1)
