@@ -123,7 +123,6 @@ def process_ground_truths(ground_truths, frames_index,class_name):
         det = []
         bboxes = []
         for obj in ground_truth_frame:
-            print(obj)
             if obj['name'] == class_name:
                 bboxes.append(obj['bbox'])
                 det.append(False)
@@ -146,8 +145,7 @@ def process_detections(detections, class_recs):
     BB: array with all the BBoxes in all the video (sorted by confidence)
     """
     image_ids = [frame for frame, objs in detections.items() for _ in objs if frame in class_recs.keys()]
-    confidence = np.array(
-        [obj['confidence'] for frame, objs in detections.items() for obj in objs if frame in class_recs.keys()])
+    confidence = np.array([obj['confidence'] for frame, objs in detections.items() for obj in objs if frame in class_recs.keys()])
     BB = np.array([obj['bbox'] for frame, objs in detections.items() for obj in objs if frame in class_recs.keys()])
 
     # sort by confidence
@@ -173,9 +171,11 @@ def process_results(image_ids, class_recs, BB, iou_threshold):
     nd = len(image_ids)
     tp = np.zeros(nd)
     fp = np.zeros(nd)
+    
     for d in range(nd):
         R = class_recs[image_ids[d]]
         bb = BB[d, :].astype(float)
+        
         ovmax = -np.inf
         BBGT = R['bbox'].astype(float)
 
@@ -189,11 +189,12 @@ def process_results(image_ids, class_recs, BB, iou_threshold):
         if ovmax > iou_threshold:
             if not R['det'][jmax]:
                 tp[d] = 1.
-                R['det'][jmax] = 1
+                R['det'][jmax] = True
             else:
                 fp[d] = 1.
         else:
             fp[d] = 1.
+
     return fp, tp
 
 
@@ -232,7 +233,6 @@ def evaluation_single_class(ground_truths, detections, frames_index, class_name=
     """
     # extract ground_truth objects for this class
     class_recs, npos = process_ground_truths(ground_truths, frames_index, class_name)
-
     # Process detections and sort by confidence
     image_ids, BB = process_detections(detections, class_recs)
 

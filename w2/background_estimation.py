@@ -98,8 +98,8 @@ def preprocess_mask(bg):
     :param bg: mask of the bg and fg
     :return: bg_closed: preprocessed bg and fg
     """
-
-    bg = cv2.morphologyEx(bg, cv2.MORPH_OPEN, kernel=np.ones((3, 3), np.uint8))
+    
+    bg = cv2.morphologyEx(bg, cv2.MORPH_OPEN, kernel=np.ones((5, 5), np.uint8))
     bg = cv2.morphologyEx(bg, cv2.MORPH_CLOSE, kernel=np.ones((50, 50), np.uint8))
 
     return bg
@@ -155,8 +155,8 @@ def foreground_bboxes(bg_preprocessed):
     _, _, stats, _ = cv2.connectedComponentsWithStats(bg_preprocessed)
 
     bboxes = []
-    for stat in stats[1:]: # First connected components corresponds to the background
-        if stat[4] > 100:  # Filter minimum area
-            bboxes.append([stat[0], stat[1], stat[2], stat[3]])  # x, y, h, w
+    for stat in stats: # First connected components corresponds to the background
+        if stat[3] > 50 and stat[3] < 500 and stat[2] > 50 and stat[2] < 500:  # Filter minimum area
+            bboxes.append([stat[0], stat[1], stat[2], stat[3]])  # x, y, w, h
 
     return bboxes
