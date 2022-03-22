@@ -166,14 +166,11 @@ def foreground_bboxes(bg_preprocessed):
     # Sorted by area: The largest, at the end.
     stats = stats[stats[:, 4].argsort()]
     # todo: cambiar de orden las bboxes y organizarlas al reves?
-    # todo: cortar si hay muchisimas bboxes en un frame?
 
     # Save all the bboxes from that frame.
     bboxes = []
     for stat in stats[1:]: # First connected components corresponds to the background
         if stat[4] > 100:  # Filter minimum area
             bboxes.append([stat[0], stat[1], stat[2], stat[3]])  # x, y, h, w
-    if bboxes: # not empty list
-        bboxes.pop() # drop last bbox that is the whole image
 
     return bboxes
