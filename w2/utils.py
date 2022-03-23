@@ -51,37 +51,26 @@ def plotBBox(imgs, initalFrame, finalFrame, **labels):
     return frames
 
 
-def read_frames(frames_paths,color=False):
+def read_frames(frames_paths,color='gray'):
     """
     Reads all frames and store them in a pickle in order to be more efficient
     :param frames_paths:
     :return: frames: variable with all the frames stacked
     """
     
-    if not color and exists('variables/frames.pickle'):
-        with open('variables/frames.pickle', 'rb') as f:
-            frames = pickle.load(f)
-    elif color and exists('variables/frames_channel0.pickle'):
-        return
-    else:
-        frames = []
-        print('reading frames and storing them in variables/frames.pickle in order to be more efficient...')
-        for f_path in tqdm(frames_paths):
-            frame = cv2.imread(f_path)
-            if not color:
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            frames.append(frame)
 
-        frames = np.array(frames)
-        if not color:
-            with open('variables/frames.pickle', 'wb') as f:
-                pickle.dump(frames, f)
-        else:
-            for c in range(3):
-                print(c)
-                with open(f'variables/frames_channel{c}.pickle', 'wb') as f:
-                    pickle.dump(frames[:,:,:,c], f)
-            return
+    frames = []
+    print('reading frames and storing them in variables/frames.pickle in order to be more efficient...')
+    for f_path in tqdm(frames_paths):
+        frame = cv2.imread(f_path)
+        if color == 'gray':
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        elif color == "HSV":
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        elif color == "LAB":
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+       
+        frames.append(frame)
 
     return frames
 
