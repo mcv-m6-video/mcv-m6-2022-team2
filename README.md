@@ -31,3 +31,15 @@ We also evaluate detectors using the given predictions made by state-of-the-art 
 Then we move to the task of optical flow estimation with the Kitty dataset. For this task we aim to comprehensively assess the 
 detections given by the Lucas-Kanade algorithm in some instances of the dataset. We use MSEN and PEPN evaluation metrics and 
 then perform some visual analysis of the results. One of the goals is to find a well suited method to visualize the optical flow.
+
+## Week 2
+This week tasks present the problem of background estimation from video sequences, by means of Gaussian modelling methods.
+This family of methods pose the problem as a statistical model, where each pixel of each frame is modelled as a Random Variable
+with additive Gaussian noise. The mean and variance of the noise is set according to the mean and std over a set of frames, 
+specifically the initial 25% of frames. This results in a mean and std matrix, with the shape of the input images, 
+that will be our model for the background. By comparing consecutive new frames with the mean, we can detect sudden 
+changes in the pixel values, and hence moving objects. Furthermore, the detections are converted into connected components 
+to perform foreground estimation.
+
+We test different versions of the model by applying an adaptive scheme for updating the mean and std, and perform hyperparameter search
+for tuning the alpha and rho parameters. The method is compared with state of the art models. Finally, we test the 3D Gaussian model using different color spaces.
