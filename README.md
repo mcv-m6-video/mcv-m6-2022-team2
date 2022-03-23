@@ -45,15 +45,17 @@ We test different versions of the model by applying an adaptive scheme for updat
 for tuning the alpha and rho parameters. The method is compared with state of the art models. Finally, we test the 3D Gaussian model using different color spaces.
 
 The division of the tasks is the following: 
-⋅⋅* Task1: Modeling of the background with a single gaussian estimation
-⋅⋅* Task2: Modeling of the background with a single gaussian estimation adaptatively
-⋅⋅* Task3: Background removal algorithms in comparison with our method
-⋅⋅* Task4: Modeling of the background with a single gaussian estimation adaptatively (RGB case)
+- Task1: Modeling of the background with a single gaussian estimation
+- Task2: Modeling of the background with a single gaussian estimation adaptatively
+- Task3: Background removal algorithms in comparison with our method
+- Task4: Modeling of the background with a single gaussian estimation adaptatively (RGB case)
 
 To execute tasks (1 to 4) on week2:
 ```
 python task{id_task}.py
 ```
+Where id_task can be 1, 2, 3 or 4.
+
 For example to execute task 3:
 ```
 python task3.py
