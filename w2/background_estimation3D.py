@@ -10,7 +10,7 @@ from dataset_gestions import update_labels
 import os
 
 
-def single_gaussian_estimation(frames, alpha=0.15, rho=0, adaptive=False, plot_results=False):
+def single_gaussian_estimation(frames_paths, alpha=0.15, rho=0, color_space="RGB", adaptive=False, plot_results=False):
     """
     It is the MOTHER FUNCTION. It estimates the background and foreground, computes the bounding boxes
     from the masks with several techniques and returns the labels dictionary of lists updated.
@@ -20,38 +20,61 @@ def single_gaussian_estimation(frames, alpha=0.15, rho=0, adaptive=False, plot_r
     :return: labels: labels dictionary of lists updated, where are all the bboxes, confidence, etc.
     """
 
-    n_frames = round(frames.shape[0] * 0.99) # First 25% of the frame sequence to model background
-    training_frames = frames[:n_frames]
-    segmenting_frames = frames[n_frames:]
+    n_frames = round(len(frames_paths) * 0.25) # First 25% of the frame sequence to model background
+    training_frames = frames_paths[:n_frames]
+    segmenting_frames = frames_paths[n_frames:]
 
-
-    for c in range(training_frames.shape[3]):
-        mean, std = mean_std(training_frames[:,:,:,c])   # Model the background as a single gaussian (mean, std)
-        labels, mean_history, std_history = segmentation(segmenting_frames[:,:,:,c], n_frames, mean, std, alpha, rho,
-                            adaptive=adaptive, plot_results=plot_results)
+    mean, std = mean_std(training_frames,color_space)   # Model the background as a single gaussian (mean, std)
         
+    labels = segmentation(segmenting_frames, n_frames, mean, std, alpha, rho,color_space,
+                            adaptive=adaptive, plot_results=plot_results)
 
-                    
-    print(labels_total)
 
-    if plot_results:
+    """ if plot_results:
         plot_frames = frames[n_frames:n_frames+100]
-        plot_pixel_detection(plot_frames,mean_history,std_history,alpha,n_frames)
+        plot_pixel_detection(plot_frames,mean,std,alpha,n_frames) """
 
     return labels
 
 
-def mean_std(frames):
+def mean_std(frames_paths, color_space):
     """
     Estimates the mean and std matrix from the 25% of the frames from the video. If it doesn't exist the
     variables, it creates them, if they exist, loads them to be more efficient and less time consuming.
     :param frames_paths: paths of the frames
     :return: mean and std matrices from all the frames (of size of the image)
     """
+    
 
     print("Computing mean and std")
-    mean = np.mean(frames, axis=0)
-    std = np.std(frames, axis=0)
+    for f_path in tqdm(frames_paths):
+        frame = cv2.imread(f_path)
+        
+        if color_space == 'HSV':
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        elif color_space == 'LAB':
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+            
+        if f_path[-8:] == '0000.png':
+            frames_sum = frame.astype(float)
+        else:
+            frames_sum += frame.astype(float)
+
+    mean = frames_sum/len(frames_paths)
+    
+    for f_path in tqdm(frames_paths):
+        frame = cv2.imread(f_path)
+        
+        if color_space == 'HSV':
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        elif color_space == 'LAB':
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+        
+        if f_path[-8:] == '0000.png':
+            frames_dist = ((frame-mean).astype(float))**2
+        else:
+            frames_dist += ((frame-mean).astype(float))**2
+    std = np.sqrt(frames_dist/len(frames_paths))
 
     return mean, std
 
@@ -66,7 +89,7 @@ def adaptive_mean_std(frame, mask, rho, mean, std):
     return mean, std
 
 
-def background_mask(frame, mean, std, alpha):
+def background_mask(frame, means, stds, alpha):
     """
     Generate the background mask for a frame
     :param frame: img frame
@@ -77,16 +100,17 @@ def background_mask(frame, mean, std, alpha):
     """
 
     # Background is the same shape as frame
-    mask = np.zeros_like(frame)
+    mask = np.zeros_like(frame[:,:,0])
 
     # Perform background and foreground substraction
-    diff = frame - mean
-    foreground_idx = np.where(abs(diff) >= alpha * (2 + std))
+    for c in range(means.shape[2]):
+        diff = frame[:,:,c] - means[:,:,c]
+        foreground_idx = np.where(np.abs(diff) >= alpha * (2 + stds[:,:,c]))
+        mask[foreground_idx[0],foreground_idx[1]] += 1
 
     # If pixel is classified as foreground, assign a 255 to it. If not, pixel is bg and remains at 0.
-    mask[foreground_idx[0], foreground_idx[1]] = 255
-    
-
+    mask[mask <2] = 0
+    mask[mask >=2] = 255
 
     return mask
 
@@ -96,14 +120,14 @@ def preprocess_mask(bg):
     :param bg: mask of the bg and fg
     :return: bg_closed: preprocessed bg and fg
     """
-    
+
     bg = cv2.morphologyEx(bg, cv2.MORPH_OPEN, kernel=np.ones((5, 5), np.uint8))
     bg = cv2.morphologyEx(bg, cv2.MORPH_CLOSE, kernel=np.ones((50, 50), np.uint8))
 
     return bg
 
 
-def segmentation(frames, n_frames, mean, std, alpha, rho, adaptive=False, plot_results=True):
+def segmentation(frames_paths, n_frames, means, stds, alpha, rho, color_space, adaptive=False, plot_results=True):
     """
     Compute background and foreground for every frames.
     :param frames: Variable where all the frames are stacked
@@ -117,20 +141,16 @@ def segmentation(frames, n_frames, mean, std, alpha, rho, adaptive=False, plot_r
     labels = {}
 
     print('Segmenting foreground and background...')
-    mean_history = np.array([mean])
-    std_history = np.array([std])
     
-    for idx_frame, frame in enumerate(tqdm(frames)):
-
-        mask = background_mask(frame, mean, std, alpha)   # Compute the mask of the frame
-
-        if adaptive:
-            mean, std = adaptive_mean_std(frame, mask, rho, mean, std)
-            mask = background_mask(frame, mean, std, alpha)   # Recompute the mask of the frame
+    for idx_frame, f_path in enumerate(tqdm(frames_paths)):
+        frame = cv2.imread(f_path)
         
-        mean_history = np.vstack((mean_history,np.array([mean])))
-        std_history  = np.vstack((std_history, np.array([std])))
+        if color_space == 'HSV':
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        elif color_space == 'LAB':
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
             
+        mask = background_mask(frame, means, stds, alpha)   # Compute the mask of the frame       
 
         mask = preprocess_mask(mask) # Morphological operations to filter noise and make a more robust result
         bboxes = foreground_bboxes(mask) # Computes bboxes from the mask
@@ -148,7 +168,7 @@ def segmentation(frames, n_frames, mean, std, alpha, rho, adaptive=False, plot_r
 
     print('Finished!')
 
-    return labels, mean_history, std_history
+    return labels
 
 def foreground_bboxes(bg_preprocessed):
     """
