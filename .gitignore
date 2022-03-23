@@ -2,7 +2,12 @@
 ../AICity_data/
 data_stereo_flow/
 results_opticalflow_kitti/
-week2/variablest    
+week2/variablest
+
+# Avoid uploading images and gifs
+*.png
+*.gif
+*.jpg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

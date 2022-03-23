@@ -1,4 +1,5 @@
 import cv2
+
 import matplotlib.pyplot as plt
 import numpy as np
 from background_estimation import preprocess_mask, foreground_bboxes
@@ -15,26 +16,21 @@ frames = np.array(read_frames(frames_paths)) # Read all frames from the paths
 
 # Load and update ground truth labels
 ground_truth = load_labels(path_gt, 'w1_annotations.xml')  # ground_truth = load_labels(path_gt, 'gt.txt')
-ground_truth_keys = list(ground_truth.keys())
-ground_truth_keys.sort()
-
-ground_truth_list = []
-for key in ground_truth_keys:
-    ground_truth_list.append(ground_truth[key])
 
 # Drop the frames that have been used to estimate the model.
 train_frames = 0
 
+ground_truth_keys = list(ground_truth.keys())
+ground_truth_keys.sort()
+
 ground_truth_list = []
-for idx in range(train_frames,frames.shape[0]):
-    if f'{idx:04}' in ground_truth:
-        ground_truth_list.append(ground_truth[f'{idx:04}'])
-    else:
-        ground_truth_list.append([])
+for key in ground_truth_keys[train_frames:]:
+    ground_truth_list.append(ground_truth[key])
 
-ALGORITHM = 'MOG2'
 
-bg = cv2.createBackgroundSubtractorMOG2()
+# bg = cv2.createBackgroundSubtractorKNN()
+# bg = cv2.createBackgroundSubtractorMOG2()
+#bg = cv2.bgsegm.createBackgroundSubtractorGMG() # instalar opencv-contrib
 
 capture = cv2.VideoCapture(path_video + '.avi')
 if not capture.isOpened():
@@ -43,7 +39,7 @@ if not capture.isOpened():
 
 labels = {}
 
-counter = 0
+counter = 1
 while True:
     print(counter)
     ret, frame = capture.read()
@@ -62,9 +58,11 @@ while True:
         labels = update_labels(labels, counter, 2, 2, 2, 2, 1)
     for bbox in bboxes:
         frame = plotBBox([frame], 0, 1, background=bboxes)[0]
-        labels = update_labels(labels, counter, bbox[0], bbox[1], bbox[0] + bbox[2], bbox[1] + bbox[3], 1)
+        labels = update_labels(labels, counter, bbox[0], bbox[1], bbox[0]+bbox[2], bbox[1]+bbox[3], 1)
 
-    """ cv2.imshow('frame', frame) """
+    #cv2.imwrite(f'task1_plots/GMG/{counter-1}.png', frame)
+
+    #cv2.imshow('frame', frame)
 
     keyboard = cv2.waitKey(30)
     if keyboard == 'q' or keyboard == 27:
