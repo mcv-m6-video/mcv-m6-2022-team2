@@ -28,7 +28,10 @@ def predict(frames_paths, model_name, rewrite=False):
             os.remove(f'off_the_shelve/{real_model_name}.txt')
 
         # id of the model for detectron2
-        model_id = "COCO-Detection/" + model_name
+        # id para retinanet y faster-rcnn
+        # model_id = "COCO-Detection/" + model_name
+        # id para mask-rcnn
+        model_id = "COCO-InstanceSegmentation/" + model_name
 
         # CONFIGURATION
         # Model config
