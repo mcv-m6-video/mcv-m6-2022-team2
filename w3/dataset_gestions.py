@@ -124,7 +124,7 @@ def get_frames_paths(path_frames):
 
 def write_predictions(labels, model):
     print('writting predictions into a txt file...')
-    dir = 'off_the_shelve'
+    dir = 'fine_tune'
     os.makedirs(dir, exist_ok=True)
     with open(dir + '/' + model + ".txt", "w") as file:
         for label in labels.items():
