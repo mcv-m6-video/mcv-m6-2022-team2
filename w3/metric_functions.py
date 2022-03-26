@@ -105,31 +105,35 @@ def compute_average_precision_voc(recall, precision):
     return average_precision
 
 
-def process_ground_truths(ground_truths, frames_index,class_name):
+def process_ground_truths(ground_truths, frame_names, class_name):
     """
     Extract ground truth objects for a class
     :param ground_truths: Dictionary where for each frame we have a list of dictionaries of the labels PD: debug to understand it better!
-    :param frames_index: Index of starting frame in the ground truth dict.
+    :param frame_names: Path of the frames (where are located the images of the video).
     :param class_name: Name of the class, in this case, it will be always car
     :return:
     class_recs: Dictionary where: each frame is a dictionary, and inside it there are the bounding box for each detection and
     the variable det (has the information if the detection is true or false).
     npos: number of detections in gt
-    """          
-
+    """
     class_recs = {}
     npos = 0
-    for idx,ground_truth_frame in enumerate(ground_truths, frames_index):
-        det = []
-        bboxes = []
-        for obj in ground_truth_frame:
-            if obj['name'] == class_name:
-                bboxes.append(obj['bbox'])
-                det.append(False)
-                npos += 1
-                
-        class_recs[f"{idx:04}"] = {'bbox': np.array(bboxes),
-                                   'det': det}
+    for imagename in frame_names:
+        if os.name == 'nt':
+            imagename = imagename.replace(os.sep, '/')
+
+        imgname = (imagename.split('/')[-1]).split('.')[0]
+        try:
+            # In here we have bboxes and confidence of the ground truths (1 because gt).
+            R = [obj for obj in ground_truths[imgname] if obj['name'] == class_name]
+        except:
+            continue
+        # Extract bbox from list of dicts R
+        bbox = np.array([x['bbox'] for x in R])
+        det = [False] * len(R)
+        npos += len(R)
+        class_recs[imgname] = {'bbox': bbox,
+                               'det': det}
 
     return class_recs, npos
 
@@ -145,7 +149,8 @@ def process_detections(detections, class_recs):
     BB: array with all the BBoxes in all the video (sorted by confidence)
     """
     image_ids = [frame for frame, objs in detections.items() for _ in objs if frame in class_recs.keys()]
-    confidence = np.array([obj['confidence'] for frame, objs in detections.items() for obj in objs if frame in class_recs.keys()])
+    confidence = np.array(
+        [obj['confidence'] for frame, objs in detections.items() for obj in objs if frame in class_recs.keys()])
     BB = np.array([obj['bbox'] for frame, objs in detections.items() for obj in objs if frame in class_recs.keys()])
 
     # sort by confidence
@@ -171,11 +176,9 @@ def process_results(image_ids, class_recs, BB, iou_threshold):
     nd = len(image_ids)
     tp = np.zeros(nd)
     fp = np.zeros(nd)
-    
     for d in range(nd):
         R = class_recs[image_ids[d]]
         bb = BB[d, :].astype(float)
-        
         ovmax = -np.inf
         BBGT = R['bbox'].astype(float)
 
@@ -189,12 +192,11 @@ def process_results(image_ids, class_recs, BB, iou_threshold):
         if ovmax > iou_threshold:
             if not R['det'][jmax]:
                 tp[d] = 1.
-                R['det'][jmax] = True
+                R['det'][jmax] = 1
             else:
                 fp[d] = 1.
         else:
             fp[d] = 1.
-
     return fp, tp
 
 
@@ -218,7 +220,7 @@ def compute_prec_and_recall(fp, tp, npos):
     return prec, rec
 
 
-def evaluation_single_class(ground_truths, detections, frames_index, class_name='car', iou_threshold=0.5):
+def evaluation_single_class(ground_truths, frame_names, detections, class_name='car', iou_threshold=0.5):
     """
     ################## MAIN FUNCTION! => Perform Pascal VOC evaluation ##########################
     code extracted (and refined!) from team 3 of last year: https://github.com/mcv-m6-video/mcv-m6-2021-team3/blob/main/Week1/metrics.py
@@ -232,7 +234,8 @@ def evaluation_single_class(ground_truths, detections, frames_index, class_name=
     average precision: area under precision recall curve
     """
     # extract ground_truth objects for this class
-    class_recs, npos = process_ground_truths(ground_truths, frames_index, class_name)
+    class_recs, npos = process_ground_truths(ground_truths, frame_names, class_name)
+
     # Process detections and sort by confidence
     image_ids, BB = process_detections(detections, class_recs)
 

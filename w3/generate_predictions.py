@@ -20,55 +20,57 @@ def predict(frames_paths, model_name, rewrite=False):
     :return: dictionary of labels updated
     """
 
-    # id of the model for detectron2
-    model_id = "COCO-Detection/" + model_name
+    real_model_name = model_name.replace('.yaml', '')
 
-    # CONFIGURATION
-    # Model config
-    cfg = get_cfg()
+    if rewrite or not exists(f'off_the_shelve/{real_model_name}.txt'):
 
-    # Run a model in detectron2's core library: get file and weights
-    cfg.merge_from_file(model_zoo.get_config_file(model_id))
-    cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(model_id)
+        if exists(f'off_the_shelve/{real_model_name}.txt'):
+            os.remove(f'off_the_shelve/{real_model_name}.txt')
 
-    # Hyper-params
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # threshold used to filter out low-scored bounding boxes in predictions
-    cfg.MODEL.DEVICE = "cuda"
-    cfg.OUTPUT_DIR = 'output'
+        # id of the model for detectron2
+        model_id = "COCO-Detection/" + model_name
 
-    # Initialize predictor
-    predictor = DefaultPredictor(cfg)
+        # CONFIGURATION
+        # Model config
+        cfg = get_cfg()
 
-    # Dictionary of all the annotations of the frames
-    labels= {}
-    print('generating predictions...')
-    for frame_path in tqdm(frames_paths):
-        # Read image and take the string of the path (example: frame 2 => '0002')
-        im = cv2.imread(frame_path)
-        imgname = (frame_path.split('/')[-1]).split('.')[0]
+        # Run a model in detectron2's core library: get file and weights
+        cfg.merge_from_file(model_zoo.get_config_file(model_id))
+        cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(model_id)
 
-        # Do inference and get the bboxes, confidence and classes
-        outputs = predictor(im)
-        bboxes = outputs["instances"].pred_boxes
-        conf = outputs["instances"].scores
-        classes = outputs["instances"].pred_classes
+        # Hyper-params
+        cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # threshold used to filter out low-scored bounding boxes in predictions
+        cfg.MODEL.DEVICE = "cuda"
+        cfg.OUTPUT_DIR = 'output'
 
-        # For each frame upload the labels dictionary
-        for bbox, conf, pred_class in zip(bboxes, conf, classes):
-            if pred_class == 2:  # we detect a car
-                score = conf.cpu().numpy()
-                bbox_det = bbox.cpu().numpy()
-                update_labels(labels, imgname, bbox_det[0], bbox_det[1], bbox_det[2], bbox_det[3], score)
+        # Initialize predictor
+        predictor = DefaultPredictor(cfg)
 
-    print('Labels uploaded')
+        # Dictionary of all the annotations of the frames
+        labels= {}
+        print('generating predictions...')
+        for frame_path in tqdm(frames_paths):
+            # Read image and take the string of the path (example: frame 2 => '0002')
+            im = cv2.imread(frame_path)
+            imgname = (frame_path.split('/')[-1]).split('.')[0]
 
-    # save predictions in the txt if rewrite=True of it not exists
-    model_name = model_name.replace('.yaml', '')
+            # Do inference and get the bboxes, confidence and classes
+            outputs = predictor(im)
+            bboxes = outputs["instances"].pred_boxes
+            conf = outputs["instances"].scores
+            classes = outputs["instances"].pred_classes
 
-    if rewrite or not exists(f'off_the_shelve/{model_name}.txt'):
-        write_predictions(labels, model_name)
+            # For each frame upload the labels dictionary
+            for bbox, conf, pred_class in zip(bboxes, conf, classes):
+                if pred_class == 2:  # we detect a car
+                    score = conf.cpu().numpy()
+                    bbox_det = bbox.cpu().numpy()
+                    update_labels(labels, imgname, bbox_det[0], bbox_det[1], bbox_det[2] - bbox_det[0], bbox_det[3] - bbox_det[1], score)
 
-    return labels
+        print('Labels uploaded')
+
+        # save predictions in the txt if rewrite=True of it not exists
+        write_predictions(labels, real_model_name)
 
 
 
