@@ -1,5 +1,4 @@
 import cv2
-
 import matplotlib.pyplot as plt
 import numpy as np
 from background_estimation import preprocess_mask, foreground_bboxes
@@ -27,10 +26,9 @@ ground_truth_list = []
 for key in ground_truth_keys[train_frames:]:
     ground_truth_list.append(ground_truth[key])
 
+ALGORITHM = 'MOG2'
 
-# bg = cv2.createBackgroundSubtractorKNN()
-# bg = cv2.createBackgroundSubtractorMOG2()
-#bg = cv2.bgsegm.createBackgroundSubtractorGMG() # instalar opencv-contrib
+bg = cv2.createBackgroundSubtractorMOG2()
 
 capture = cv2.VideoCapture(path_video + '.avi')
 if not capture.isOpened():
@@ -54,13 +52,11 @@ while True:
     fgMask = preprocess_mask(fgMask)
 
     bboxes = foreground_bboxes(fgMask)
-    if not bboxes:
-        labels = update_labels(labels, counter, 2, 2, 2, 2, 1)
+    #if not bboxes:
+    #    labels = update_labels(labels, counter, 2, 2, 2, 2, 1)
     for bbox in bboxes:
         frame = plotBBox([frame], 0, 1, background=bboxes)[0]
         labels = update_labels(labels, counter, bbox[0], bbox[1], bbox[0]+bbox[2], bbox[1]+bbox[3], 1)
-
-    #cv2.imwrite(f'task1_plots/GMG/{counter-1}.png', frame)
 
     #cv2.imshow('frame', frame)
 
