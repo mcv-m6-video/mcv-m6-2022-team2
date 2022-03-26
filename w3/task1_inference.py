@@ -7,7 +7,10 @@ In this .py is implemented the following:
 - Inference in detectron2 and AP computation
 """
 # Model name to do inference in detectron2
-model_name = 'faster_rcnn_X_101_32x8d_FPN_3x.yaml'
+model_name = 'retinanet_R_101_FPN_3x.yaml'
+# retinanet_R_101_FPN_3x.yaml
+# faster_rcnn_X_101_32x8d_FPN_3x.yaml
+
 
 # Directions where all the sequence is located
 path_data = '../../data/AICity_data/train/S03/c010'
@@ -38,5 +41,5 @@ detections = load_labels(path_detections, model_name.replace('.yaml', '') + '.tx
 # Evaluate results
 rec, prec, ap = evaluation_single_class(ground_truth, frames_paths, detections, class_name='car', iou_threshold=0.5)
 
-print('AP: ' + ap)
+print(f'AP: {ap}')
 print('finished')
