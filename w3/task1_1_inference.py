@@ -2,6 +2,8 @@ from dataset_gestions import load_labels, get_frames_paths
 from generate_predictions import predict
 from metric_functions import evaluation_single_class
 from utils import plotBBox
+import cv2
+
 """
 In this .py is implemented the following:
 - Inference in detectron2 and AP computation
@@ -12,6 +14,7 @@ model_name = 'mask_rcnn_X_101_32x8d_FPN_3x.yaml'
 # faster_rcnn_X_101_32x8d_FPN_3x.yaml
 # mask_rcnn_X_101_32x8d_FPN_3x.yaml
 
+# Set this variable to true to draw the bounding boxes
 draw = True
 
 # Directions where all the sequence is located
@@ -40,11 +43,17 @@ predict(frames_paths, model_name, rewrite=False)
 detections = load_labels(path_detections, model_name.replace('.yaml', '') + '.txt')
 #detections2 = load_labels('/home/francesc/PycharmProjects/Visual-Recognition/M6/data/AICity_data/train/S03/c010/det', 'det_mask_rcnn.txt')
 
-"""if draw:
-    plotBBox()"""
-
 # Evaluate results
 rec, prec, ap = evaluation_single_class(ground_truth, frames_paths, detections, class_name='car', iou_threshold=0.5)
 
 print(f'AP: {ap}')
 print('finished')
+
+
+if draw:
+    labels = {
+        'gt' : ground_truth,
+        'det': detections
+    }
+
+    frames = plotBBox(frames_paths, initalFrame=500, finalFrame=700, saveFrames=True, **labels)

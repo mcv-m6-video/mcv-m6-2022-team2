@@ -2,7 +2,7 @@ import cv2
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-
+from tqdm import tqdm
 from metric_functions import mean_iou
 
 def plot_precision_recall_one_class(prec, recall, ap, info):
@@ -74,10 +74,22 @@ def dict_to_list(frame_info):
     """
     return [[obj['bbox'][0], obj['bbox'][1], obj['bbox'][2], obj['bbox'][3]] for obj in frame_info]
 
-def plotBBox(img_path, initalFrame, finalFrame, **labels):
+def plotBBox(img_path, initalFrame, finalFrame, saveFrames=False, **labels):
+    """
+    Plots bounding boxes into the selected frames
+    :param img_path: path to all the images
+    :param initalFrame: frame to start plotting bounding bboxes
+    :param finalFrame: frame to end plotting bboxes
+    :param saveFrames: if it is set to true, stores frames in dir /frames_stored
+    :param labels: the idea is to be a dict with gt and detections or only gt or detections
+    :return: frames with bboxes plotted in it
+    """
+
     frames = []
     COLORS=[(0,255,0), (0,0,255)]
-    for frame_num in range(initalFrame, finalFrame):
+
+    print('plotting bounding boxes in the frames...')
+    for frame_num in tqdm(range(initalFrame, finalFrame)):
         im = cv2.imread(img_path[frame_num])
         for idx, (name, labels_total) in enumerate(labels.items()):
             labels_frame = labels_total[f'{frame_num:04}']
@@ -87,5 +99,12 @@ def plotBBox(img_path, initalFrame, finalFrame, **labels):
                 im = cv2.rectangle(img=im, pt1=(bbox[0], bbox[1]), pt2=(bbox[2], bbox[3]), color=COLORS[idx], thickness=2)
 
         frames.append(im)
+
+    if saveFrames:
+        path = 'frames_stored'
+        os.makedirs(path, exist_ok=True)
+        print(f'storing frames with bboxes plotted in it in /{path}...')
+        for idx, frame in tqdm(enumerate(frames)):
+            cv2.imwrite(f'{path}/{idx}.png', frame)
 
     return frames
