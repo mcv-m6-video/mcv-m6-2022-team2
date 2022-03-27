@@ -9,7 +9,7 @@ In this .py is implemented the following:
 - Inference in detectron2 and AP computation
 """
 # Model name to do inference in detectron2
-model_name = 'mask_rcnn_X_101_32x8d_FPN_3x.yaml'
+model_name = 'retinanet_R_101_FPN_3x.yaml'
 # retinanet_R_101_FPN_3x.yaml
 # faster_rcnn_X_101_32x8d_FPN_3x.yaml
 # mask_rcnn_X_101_32x8d_FPN_3x.yaml
@@ -40,14 +40,13 @@ frames_paths = get_frames_paths(path_video)
 predict(frames_paths, model_name, rewrite=False)
 
 # Load labels detected from the txt
-detections = load_labels(path_detections, model_name.replace('.yaml', '') + '.txt')
+real_model_name = model_name.replace('.yaml', '')
+detections = load_labels(path_detections, real_model_name + '.txt')
 #detections2 = load_labels('/home/francesc/PycharmProjects/Visual-Recognition/M6/data/AICity_data/train/S03/c010/det', 'det_mask_rcnn.txt')
 
 # Evaluate results
 rec, prec, ap = evaluation_single_class(ground_truth, frames_paths, detections, class_name='car', iou_threshold=0.5)
-
 print(f'AP: {ap}')
-print('finished')
 
 
 if draw:
@@ -56,4 +55,5 @@ if draw:
         'det': detections
     }
 
-    frames = plotBBox(frames_paths, initalFrame=500, finalFrame=700, saveFrames=True, **labels)
+    frames = plotBBox(frames_paths, initalFrame=500, finalFrame=600, modelName=real_model_name,
+                      saveFrames=True, **labels)

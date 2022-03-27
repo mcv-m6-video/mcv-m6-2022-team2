@@ -4,6 +4,8 @@ import os
 import numpy as np
 from tqdm import tqdm
 from metric_functions import mean_iou
+import glob
+from PIL import Image
 
 def plot_precision_recall_one_class(prec, recall, ap, info):
     """
@@ -74,13 +76,13 @@ def dict_to_list(frame_info):
     """
     return [[obj['bbox'][0], obj['bbox'][1], obj['bbox'][2], obj['bbox'][3]] for obj in frame_info]
 
-def plotBBox(img_path, initalFrame, finalFrame, saveFrames=False, **labels):
+def plotBBox(img_path, initalFrame, finalFrame, modelName, saveFrames=False, **labels):
     """
     Plots bounding boxes into the selected frames
     :param img_path: path to all the images
     :param initalFrame: frame to start plotting bounding bboxes
     :param finalFrame: frame to end plotting bboxes
-    :param saveFrames: if it is set to true, stores frames in dir /frames_stored
+    :param saveFrames: if it is set to true, stores frames in dir /frames_stored and generates gifs
     :param labels: the idea is to be a dict with gt and detections or only gt or detections
     :return: frames with bboxes plotted in it
     """
@@ -107,4 +109,34 @@ def plotBBox(img_path, initalFrame, finalFrame, saveFrames=False, **labels):
         for idx, frame in tqdm(enumerate(frames)):
             cv2.imwrite(f'{path}/{idx}.png', frame)
 
+        print('generating GIF...')
+        generate_gifs_from_frames(modelName, initalFrame, finalFrame)
+
     return frames
+
+
+def generate_gifs_from_frames(modelName, initialFrame, finalFrame):
+
+    dir = "gifs_stored"
+    fp_out = dir + f'/{modelName}.gif'
+    os.makedirs(dir, exist_ok=True)
+
+    frames = []
+    for idx in range(finalFrame-initialFrame):
+        img = Image.open(f'frames_stored/{idx}.png')
+        img = img.resize((640, 360))
+        frames.append(img)
+
+    frame_one = frames[0]
+    frame_one.save(fp=fp_out, format="GIF", append_images=frames, save_all=True, duration=140, loop=0)
+
+    """# filepaths
+    fp_in = "frames_stored/*.png"
+    dir = "gifs_stored"
+    fp_out = dir + f'/{modelName}.gif'
+
+    os.makedirs(dir, exist_ok=True)
+
+    imgs = (Image.open(f) for f in sorted(glob.glob(fp_in)))
+    img = next(imgs)  # extract first image from iterator
+    img.save(fp=fp_out, format='GIF', append_images=imgs, save_all=True, duration=25, loop=0)"""
