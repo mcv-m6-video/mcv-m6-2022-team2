@@ -54,16 +54,6 @@ def plot_iou_vs_time(det_file_path, frames_paths, ground_truth, detections):
         plt.ylabel('mean IoU')
         plt.title(f'Mean IoU in function of the frame in model {det_file_path.split(".txt")[0]}')
         plt.pause(0.05)
-        
-        """ if not os.path.exists(det_file_path.split(".txt")[0] + '_meanIoU'):
-            os.mkdir(det_file_path.split(".txt")[0] + '_meanIoU')
-            
-        if i < 1000:
-            frame = '0' + str(i) 
-        else:
-            frame = str(i)
-            
-        plt.savefig(f'{det_file_path.split(".txt")[0]}_meanIoU/meanIou_{frame}.png') """
     
     plt.show()
 
@@ -129,14 +119,3 @@ def generate_gifs_from_frames(modelName, initialFrame, finalFrame):
 
     frame_one = frames[0]
     frame_one.save(fp=fp_out, format="GIF", append_images=frames, save_all=True, duration=140, loop=0)
-
-    """# filepaths
-    fp_in = "frames_stored/*.png"
-    dir = "gifs_stored"
-    fp_out = dir + f'/{modelName}.gif'
-
-    os.makedirs(dir, exist_ok=True)
-
-    imgs = (Image.open(f) for f in sorted(glob.glob(fp_in)))
-    img = next(imgs)  # extract first image from iterator
-    img.save(fp=fp_out, format='GIF', append_images=imgs, save_all=True, duration=25, loop=0)"""
