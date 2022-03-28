@@ -35,7 +35,6 @@ def tracking_overlap(labels):
 
                 update_labels(labels, int(frame), id, detection['bbox'][0], detection['bbox'][1],
                               detection['bbox'][2], detection['bbox'][3], detection['confidence'])
-
         past_label = label
 
 
