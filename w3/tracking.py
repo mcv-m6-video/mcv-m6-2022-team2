@@ -105,9 +105,10 @@ if __name__ == "__main__":
     ground_truth = load_labels(path_gt, 'w1_annotations.xml')  # ground_truth = load_labels(path_gt, 'gt.txt')
 
     # paths to models
-    model_name = 'retinanet_R_101_FPN_3x.yaml'
+    #model_name = 'retinanet_R_101_FPN_3x.yaml'
+    model_name = 'faster_rcnn_X_101_32x8d_FPN_3x.yaml'
     real_model_name = model_name.replace('.yaml', '')
-    path_detections = 'off_the_shelve'
+    path_detections = 'fine_tune'
 
     # load labels
     detections = load_labels(path_detections, real_model_name + '.txt')
@@ -115,7 +116,7 @@ if __name__ == "__main__":
     
     ground_truth_list = list(ground_truth.keys())
     ground_truth_list.sort()
-    print(ground_truth_list[0])
+    print(ground_truth['0001'])
     print(list(detections.keys())[0])
 
     tracking_overlap(detections)
