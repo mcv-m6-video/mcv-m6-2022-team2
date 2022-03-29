@@ -20,11 +20,12 @@ def tracking_overlap(labels):
             
         else: # If we are not in the first frame
             gt_bboxes = np.zeros((len(past_label), 4))
-            for idx, past_detections in enumerate(past_label):
+            for idx, past_detections in enumerate(past_label): # Take all previous frame detections
                 gt_bboxes[idx, :] = np.array((past_detections['bbox'][0], past_detections['bbox'][1],
                                               past_detections['bbox'][0] + past_detections['bbox'][2], 
                                               past_detections['bbox'][1] + past_detections['bbox'][3]))
-            for detection in label:
+                
+            for detection in label: # Compare each current detection with all the previous detections
                 bbox = [detection['bbox'][0], detection['bbox'][1], 
                         detection['bbox'][2], detection['bbox'][3]]
 
