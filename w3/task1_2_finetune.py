@@ -131,7 +131,8 @@ if __name__ == "__main__":
 
     print('Labels uploaded')
     # save predictions in the txt if rewrite=True of it not exists
-    write_predictions(labels, model_name)
+    path = 'fine_tune'
+    write_predictions(path, labels, model_name)
 
 
 

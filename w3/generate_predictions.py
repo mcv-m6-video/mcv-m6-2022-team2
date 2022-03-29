@@ -73,7 +73,8 @@ def predict(frames_paths, model_name, rewrite=False):
         print('Labels uploaded')
 
         # save predictions in the txt if rewrite=True of it not exists
-        write_predictions(labels, real_model_name)
+        path = 'off_the_shelve'
+        write_predictions(path,labels, real_model_name)
 
 
 

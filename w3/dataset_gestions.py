@@ -133,7 +133,7 @@ def get_frames_paths(path_frames):
     return images_paths
 
 
-def write_predictions(labels, model):
+def write_predictions(path,labels, model):
     """
     writes predictions from labels dictionary into a .txt
     :param labels: labels dictionary of annotations
@@ -141,10 +141,10 @@ def write_predictions(labels, model):
     :return: -
     """
 
-    os.makedirs('off_the_shelve', exist_ok=True)
+    os.makedirs(path, exist_ok=True)
 
     print('writting predictions into a txt file...')
-    with open('off_the_shelve' + '/' + model + ".txt", "w") as file:
+    with open(path + '/' + model + ".txt", "w") as file:
         for label in labels.items():
             for detection in label[1]:
                 bbox = detection['bbox']
