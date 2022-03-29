@@ -18,9 +18,9 @@ from register_dataset import register_city_challenge
 from detectron_utils import MyTrainer
 
 # MODEL YAML
-#model_id = "COCO-Detection/retinanet_R_101_FPN_3x.yaml"         # RetinaNet (R101)
-model_id = "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml" # Faster R-CNN (X101-FPN)
-# model_id = "COCO-Detection/mask_rcnn_X_101_32x8d_FPN_3x.yaml"
+model_id = "COCO-Detection/retinanet_R_101_FPN_3x.yaml"         # RetinaNet (R101)
+#model_id = "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml" # Faster R-CNN (X101-FPN)
+
 # PATHS
 path_data = '../../data/AICity_data/train/S03/c010'             # root of the data
 path_gt = path_data + '/gt'                                     # ground truth folder
@@ -74,26 +74,26 @@ if __name__ == "__main__":
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 
     if TRAIN:
-        # # Init wandb
-        # wandb.init(project="detectron2-week3", entity='celulaeucariota', name=model_name, sync_tensorboard=True)
-        #
-        # # --- TRAINING ---
-        # trainer = MyTrainer(cfg)                # Create object
-        # trainer.resume_or_load(resume=True)    # If the model has been already trained, load it
-        # trainer.train()                         # Train
-        #
-        # # # save the model
-        # os.makedirs('models', exist_ok=True)
-        # torch.save(trainer.model.state_dict(), os.path.join('models', f"{model_name}.pth"))
+        # Init wandb
+        wandb.init(project="detectron2-week3", entity='celulaeucariota', name=model_name, sync_tensorboard=True)
+
+        # --- TRAINING ---
+        trainer = MyTrainer(cfg)                # Create object
+        trainer.resume_or_load(resume=True)    # If the model has been already trained, load it
+        trainer.train()                         # Train
+
+        # # save the model
+        os.makedirs('models', exist_ok=True)
+        torch.save(trainer.model.state_dict(), os.path.join('models', f"{model_name}.pth"))
 
         # --- INFERENCE/EVALUATION ---
         # Load the saved weights
         cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, model_name)
 
-        # # We can also evaluate its performance using AP metric implemented in COCO API.
-        # evaluator = COCOEvaluator('CITY_CHALLENGE_val', cfg, False, output_dir=cfg.OUTPUT_DIR)
-        # test_loader = build_detection_test_loader(cfg, 'CITY_CHALLENGE_val')
-        # print(inference_on_dataset(trainer.model, test_loader, evaluator))
+        # We can also evaluate its performance using AP metric implemented in COCO API.
+        evaluator = COCOEvaluator('CITY_CHALLENGE_val', cfg, False, output_dir=cfg.OUTPUT_DIR)
+        test_loader = build_detection_test_loader(cfg, 'CITY_CHALLENGE_val')
+        print(inference_on_dataset(trainer.model, test_loader, evaluator))
 
     # --- RUN ONLY INFERENCE ---
     else:
@@ -126,12 +126,13 @@ if __name__ == "__main__":
         for bbox, conf, pred_class in zip(bboxes, conf, classes):
             score = conf.cpu().numpy()
             bbox_det = bbox.cpu().numpy()
-            update_labels(labels, imgname, bbox_det[0], bbox_det[1], bbox_det[2] - bbox_det[0],
+            update_labels(labels, imgname, -1, bbox_det[0], bbox_det[1], bbox_det[2] - bbox_det[0],
                           bbox_det[3] - bbox_det[1], score)
 
     print('Labels uploaded')
     # save predictions in the txt if rewrite=True of it not exists
-    write_predictions(labels, model_name)
+    path = 'fine_tune'
+    write_predictions(path, labels, model_name)
 
 
 

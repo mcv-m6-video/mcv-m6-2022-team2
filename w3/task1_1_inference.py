@@ -9,7 +9,7 @@ In this .py is implemented the following:
 - Inference in detectron2 and AP computation
 """
 # Model name to do inference in detectron2
-model_name = 'retinanet_R_101_FPN_3x.yaml'
+model_name = 'mask_rcnn_X_101_32x8d_FPN_3x.yaml'
 # retinanet_R_101_FPN_3x.yaml
 # faster_rcnn_X_101_32x8d_FPN_3x.yaml
 # mask_rcnn_X_101_32x8d_FPN_3x.yaml
@@ -37,7 +37,7 @@ frames_paths = get_frames_paths(path_video)
 
 # Does prediction from the model and saves them in a txt if it does not exist.
 # If it exists and you want to rewrite it, set rewrite parameter to True.
-predict(frames_paths, model_name, rewrite=False)
+predict(frames_paths, model_name, rewrite=True)
 
 # Load labels detected from the txt
 real_model_name = model_name.replace('.yaml', '')

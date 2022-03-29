@@ -61,9 +61,9 @@ def load_labels(path, name):
 
         labels = {}
         for frame in txt:
-            frame_id, _, xmin, ymin, width, height, confidence, _, _, _ = list(
+            frame_id, id, xmin, ymin, width, height, confidence, _, _, _ = list(
                 map(float, (frame.split('\n')[0]).split(',')))
-            update_labels(labels, frame_id, id, xmin, ymin, xmin + width, ymin + height, confidence)
+            update_labels(labels, int(frame_id) - 1, id, xmin, ymin, xmin + width, ymin + height, confidence)
 
         return labels
 
@@ -78,9 +78,11 @@ def load_labels(path, name):
                 # Only take into account 'cars'
                 if child.attrib['label'] not in 'car':
                     continue
+                
+                id = child.attrib['id']
                 for bbox in list(child):
                     frame_id, xmin, ymin, xmax, ymax, _, _, _ = list(map(float, ([v for k, v in bbox.attrib.items()])))
-                    update_labels(labels, int(frame_id) + 1, xmin, ymin, xmax, ymax, 1.)
+                    update_labels(labels, int(frame_id) + 1, id, xmin, ymin, xmax, ymax, 1.)
 
         return labels
 
@@ -133,7 +135,7 @@ def get_frames_paths(path_frames):
     return images_paths
 
 
-def write_predictions(labels, model):
+def write_predictions(path,labels, model):
     """
     writes predictions from labels dictionary into a .txt
     :param labels: labels dictionary of annotations
@@ -141,10 +143,10 @@ def write_predictions(labels, model):
     :return: -
     """
 
-    os.makedirs('off_the_shelve', exist_ok=True)
+    os.makedirs(path, exist_ok=True)
 
     print('writting predictions into a txt file...')
-    with open('off_the_shelve' + '/' + model + ".txt", "w") as file:
+    with open(path + '/' + model + ".txt", "w") as file:
         for label in labels.items():
             for detection in label[1]:
                 bbox = detection['bbox']

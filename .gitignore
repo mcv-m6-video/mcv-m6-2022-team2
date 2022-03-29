@@ -3,11 +3,13 @@
 data_stereo_flow/
 results_opticalflow_kitti/
 week2/variablest
-
+*/output
+*/wandb
 # Avoid uploading images and gifs
 *.png
 *.gif
 *.jpg
+*.pth
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
