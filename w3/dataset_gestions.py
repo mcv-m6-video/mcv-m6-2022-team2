@@ -61,9 +61,9 @@ def load_labels(path, name):
 
         labels = {}
         for frame in txt:
-            frame_id, _, xmin, ymin, width, height, confidence, _, _, _ = list(
+            frame_id, id, xmin, ymin, width, height, confidence, _, _, _ = list(
                 map(float, (frame.split('\n')[0]).split(',')))
-            update_labels(labels, frame_id, id, xmin, ymin, xmin + width, ymin + height, confidence)
+            update_labels(labels, int(frame_id) - 1, id, xmin, ymin, xmin + width, ymin + height, confidence)
 
         return labels
 
@@ -78,9 +78,11 @@ def load_labels(path, name):
                 # Only take into account 'cars'
                 if child.attrib['label'] not in 'car':
                     continue
+                
+                id = child.attrib['id']
                 for bbox in list(child):
                     frame_id, xmin, ymin, xmax, ymax, _, _, _ = list(map(float, ([v for k, v in bbox.attrib.items()])))
-                    update_labels(labels, int(frame_id) + 1, xmin, ymin, xmax, ymax, 1.)
+                    update_labels(labels, int(frame_id),id, xmin, ymin, xmax, ymax, 1.)
 
         return labels
 
