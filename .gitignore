@@ -3,7 +3,8 @@
 data_stereo_flow/
 results_opticalflow_kitti/
 week2/variablest
-
+*/output
+*/wandb
 # Avoid uploading images and gifs
 *.png
 *.gif
