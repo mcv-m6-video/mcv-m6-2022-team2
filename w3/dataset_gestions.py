@@ -63,7 +63,7 @@ def load_labels(path, name):
         for frame in txt:
             frame_id, id, xmin, ymin, width, height, confidence, _, _, _ = list(
                 map(float, (frame.split('\n')[0]).split(',')))
-            update_labels(labels, int(frame_id) - 1, id, xmin, ymin, xmin + width, ymin + height, confidence)
+            update_labels(labels, int(frame_id), id, xmin, ymin, xmin + width, ymin + height, confidence)
 
         return labels
 
