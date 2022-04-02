@@ -16,11 +16,11 @@ ai_city_path = '../../data/AICity_data/train/S03/c010/vdo'      # folder of the 
 if __name__ == "__main__":
 
     # Save images and gif or not
-    save = True
+    save = False
 
     # Obtain the ground truth annotations of the sequence
     ground_truth = load_labels(path_gt, 'w1_annotations.xml')  # ground_truth = load_labels(path_gt, 'gt.txt')
-    detections = load_labels('fine_tune', 'faster_rcnn_X_101_32x8d_FPN_3x.txt')
+    detections = load_labels('off_the_shelve', 'retinanet_R_101_FPN_3x.txt')
 
     # Create an accumulator that will be updated during each frame
     accumulator = mm.MOTAccumulator(auto_id=True)
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     # Initialize tracker
     mot_tracker = Sort()
 
-    frame_id = int(list(detections.keys())[0])
+    frame_id = int(list(detections.keys())[0]) +1
     ending_frame = int(list(detections.keys())[-1]) - 1
     print(f'Starting in the frame {frame_id} until {ending_frame}\n')
 
@@ -73,7 +73,7 @@ if __name__ == "__main__":
         if save:
             cv2.imwrite(f'kalman_frames/{idx:04}.jpg', frame)
             if idx-frame_id < 200:
-                output_frames.append(Image.fromarray(frame[:,:,::-1]))
+                output_frames.append(Image.fromarray(frame[:,:,::-1]).resize((640, 360)))
     if save:
         print('generating GIF...')
         frame_one = output_frames[0]
