@@ -73,15 +73,15 @@ if __name__ == "__main__":
         torch.save(trainer.model.state_dict(), os.path.join('models', f"{model_name}.pth"))
 
 
-    # --- RUN INFERENCE ---
-    cfg.MODEL.WEIGHTS = os.path.join('models', model_name + '.pth')
-
-    predictor = DefaultPredictor(cfg)
-
-    # We can also evaluate its performance using AP metric implemented in COCO API.
-    evaluator = COCOEvaluator('CITY_CHALLENGE_test', cfg, False, output_dir=cfg.OUTPUT_DIR)
-    test_loader = build_detection_test_loader(cfg, 'CITY_CHALLENGE_test')
-    print(inference_on_dataset(predictor.model, test_loader, evaluator))
+    # # --- RUN INFERENCE ---
+    # cfg.MODEL.WEIGHTS = os.path.join('models', model_name + '.pth')
+    #
+    # predictor = DefaultPredictor(cfg)
+    #
+    # # We can also evaluate its performance using AP metric implemented in COCO API.
+    # evaluator = COCOEvaluator('CITY_CHALLENGE_test', cfg, False, output_dir=cfg.OUTPUT_DIR)
+    # test_loader = build_detection_test_loader(cfg, 'CITY_CHALLENGE_test')
+    # print(inference_on_dataset(predictor.model, test_loader, evaluator))
 
 
 
