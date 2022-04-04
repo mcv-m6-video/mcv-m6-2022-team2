@@ -86,14 +86,7 @@ if __name__ == "__main__":
         os.makedirs('models', exist_ok=True)
         torch.save(trainer.model.state_dict(), os.path.join('models', f"{model_name}.pth"))
 
-        # --- INFERENCE/EVALUATION ---
-        # Load the saved weights
-        cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, model_name)
 
-        # We can also evaluate its performance using AP metric implemented in COCO API.
-        evaluator = COCOEvaluator('CITY_CHALLENGE_val', cfg, False, output_dir=cfg.OUTPUT_DIR)
-        test_loader = build_detection_test_loader(cfg, 'CITY_CHALLENGE_val')
-        print(inference_on_dataset(trainer.model, test_loader, evaluator))
 
     # --- RUN ONLY INFERENCE ---
     else:

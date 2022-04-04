@@ -35,6 +35,7 @@ def register_city_challenge(txt_path):
                               'annotations': [{'bbox': [x, y, x, y],
                                               'bbox_mode: BoxMode.XYXY_ABS,
                                               'category_id': 0,
+                                              'id': int
                                               },
                                               ...
                                               ]
@@ -75,6 +76,7 @@ def register_city_challenge(txt_path):
                         objs.append({'bbox': annotation['bbox'],
                                      'bbox_mode': BoxMode.XYXY_ABS,
                                      'category_id': 0,
+                                     'id': int(annotation['id'])
                                      })
 
                 # Load the annotations for the current frame
