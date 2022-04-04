@@ -39,6 +39,8 @@ The division of the tasks is the following:
 - Task 3.3: Analysis and Visualization of Optical Flow errors
 - Task 4: Optical Flow visualization
  
+ ![OF visualization](/w1/OF_plot.png)
+ 
 All the infromation regarding the experiments done during this week can be found at: [Slides](https://docs.google.com/presentation/d/1--gSyRbA2TWpcgvf9KUmqyU1-4Lp5N8DZkfvTHhmimQ/edit?usp=sharing)
 
 To run each section explained in the slides, we have created many files denoted as task_{id_task_{...}}.py, where {...} has some further information. These files are to be run as follows:
