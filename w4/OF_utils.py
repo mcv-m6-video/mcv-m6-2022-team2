@@ -138,6 +138,6 @@ def OF_quiver_visualize(img, flow, step):
     plt.figure()
     plt.imshow(img, cmap='gray')
     plt.quiver(x[::step, ::step], y[::step, ::step], U[::step, ::step], V[::step, ::step],
-               M[::step, ::step], scale_units='xy', angles='xy', scale=.05, color=(1,0,0,1))
+               M[::step, ::step], scale_units='xy', angles='xy', color=(1,0,0,1))
     plt.axis('off')
     plt.show()
