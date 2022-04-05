@@ -135,26 +135,16 @@ def get_frames_paths(path_frames):
     return images_paths
 
 
-def write_predictions(path,labels, model):
+def write_predictions(path, annotations):
     """
-    writes predictions from labels dictionary into a .txt
-    :param labels: labels dictionary of annotations
-    :param model: name of the model used to do inference
-    :return: -
+    Write the predictions in the .txt file.
+    :param path: txt file path where the predictions will be written. You must ensure that the subfolders exist
+    :param annotations: list of list with all predicions. It has to have the following format:
+    [[frame_id, id, xmin, ymin, xmax, ymax, confidence],
+     [frame_id, id, xmin, ymin, xmax, ymax, confidence],
+        ...
+    ]
     """
-
-    os.makedirs(path, exist_ok=True)
-
-    print('writting predictions into a txt file...')
-    with open(path + '/' + model + ".txt", "w") as file:
-        for label in labels.items():
-            for detection in label[1]:
-                bbox = detection['bbox']
-                conf = detection['confidence']
-                id = detection['id']
-                # frame_id, id_detection (-1 bc only cars), bboxes, conf, x, y, z
-                #file.write(f'{int(label[0])+1},{id},{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]},{conf},-1,-1,-1\n')
-                file.write(f'{int(label[0])},{id},{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]},{conf},-1,-1,-1\n')
-
-
-    print('predictions written into a txt file...')
+    with open(path, 'w') as f:
+        for anno in annotations:
+            f.write(f'{int(anno[0])},{int(anno[1])},{int(anno[2])},{int(anno[3])},{int(anno[4])},{int(anno[5])},{anno[6]},-1,-1,-1\n')
