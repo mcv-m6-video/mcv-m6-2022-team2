@@ -100,7 +100,7 @@ if __name__ == "__main__":
         predictor = DefaultPredictor(cfg)
 
         # Load the test dataset
-        dataset_dicts = register_city_challenge('splits/test.txt')
+        dataset_dicts = register_city_challenge('splits/train.txt')
 
         # Divide the dataset in cameras
         dataset_cams = {}
@@ -139,145 +139,125 @@ if __name__ == "__main__":
 
     # --- RUN INFERENCE ---
     if 'TRACK' in ACTIONS:
+        # CAREFUL!!!! The function load_labels() is prepared to work with:
+        # [xmin, ymin, width, height] because to load the labels does:
+        # [xmin, ymin, xmin + width, ymin + height] = [xmin, ymin, xmax, ymax]
+        # However, the inference results are stored in [xmin, ymin, xmax, ymax]
+        # So, if you see that the boxes seems correct in terms of object detection,
+        # but the boxes are extremely big is FOR THAT REASON. It drove me crazy until I realized.
 
-        txt = open('splits/test.txt', 'r')
+        # Create folder to store the tracking results
+        os.makedirs('tracking_frames', exist_ok=True)
+
+        # Read the txt in which the test cameras are stored
+        txt = open('splits/train.txt', 'r')
         test_files = txt.read().splitlines()
-        for file in test_files:
-            print(file.split('/')[1])
-            predicions = load_labels('inference', file.split('/')[1] + '.txt')
+        # Iterate through the cameras to create track the detections
+        for file in test_files[23:]:
+
+            print(f"Camera: {file.split('/')[1]}")
+
+            # Load the detections and the ground truth of the corresponding camera
+            predictions = load_labels('inference', file.split('/')[1] + '.txt')
             ground_truth = load_labels(f'frames/{file}', 'gt.txt')
 
             # Create an accumulator that will be updated during each frame
             accumulator = mm.MOTAccumulator(auto_id=True)
 
-            # Initialize tracker
-            max_cosine_distance = 0.5
-            nn_budget = None
-            nms_max_overlap = 0.3
+            # Create a tracker that will be updated during each frame
+            tracker = Sort()
 
-            metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
-            tracker = Tracker(metric)
+            # Create folder to store the tracking results
+            os.makedirs(f"tracking_frames/{file.split('/')[1]}", exist_ok=True)
 
-            for frame in sorted(glob.glob(f'frames/{file}/*.jpg')):
-                frame_num = frame.split('/')[-1].split('.')[0]
+            # Iterate through the frames
+            for img_path in tqdm(sorted(glob.glob(f'frames/{file}/*.jpg')), desc=f"Tracking {file.split('/')[1]}"):
 
-                frame_gt = ground_truth.get(frame_num, [])
-                frame_pred = predicions.get(frame_num, [])
-                frame_pred = frame_gt
-                # Obtain the gt and detected bboxes of the current frame
-                gt_bboxes = [detection['bbox'] for detection in frame_gt]
-                pred_bboxes = [Detection(detection['bbox'], 1.0, None) for detection in frame_pred]
+                frame_num = img_path.split('/')[-1].split('.')[0]
 
-                # Run non-maxima suppression on the detected bboxes
-                boxes = np.array([d.tlwh for d in pred_bboxes])
-                scores = np.array([d.confidence for d in pred_bboxes])
-                indices = preprocessing.non_max_suppression(boxes, nms_max_overlap, scores)
-                pred_bboxes = [pred_bboxes[i] for i in indices]
+                frame = cv2.imread(img_path)
 
-                # # Obtain the centers of the ground truth detections
-                # gt_centers = [(bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2) for bbox in gt_bboxes]
-                # gt_ids = [detection['id'] for detection in frame_gt]
+                # Obtain the Ground Truth and predictions for the current frame
+                # Using the function get() to avoid crashing when there is no key with that string
+                gt_annotations = ground_truth.get(frame_num, [])
+                pred_annotations = predictions.get(frame_num, [])
 
-                print(frame_num, pred_bboxes)
+                # Obtain the Ground Truth and predictions for the current frame
+                gt_bboxes = [anno['bbox'] for anno in gt_annotations]
+                pred_bboxes = [anno['bbox'] for anno in pred_annotations]
+                pred_bboxes = [[box[0], box[1], box[2]-box[0], box[3]-box[1]]for box in pred_bboxes]  # Convert to list
 
-                # Pass the frame detections to the tracker
-                tracker.predict()
-                tracker.update(pred_bboxes)
+                # Obtain the Ground Truth centers and track IDs
+                gt_centers = [(bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2) for bbox in gt_bboxes]
+                gt_ids = [anno['id'] for anno in gt_annotations]
 
-                # pred_centers = []
-                # pred_ids = []
-                # for track in tracker.tracks:
-                #     if not track.is_confirmed() or track.time_since_update > 1:
-                #         continue
-                #     bbox = track.to_tlwh()
-                #     pred_centers.append((bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2))
-                #     pred_ids.append(track.track_id)
+                # Update tracker
+                trackers = tracker.update(np.array(pred_bboxes))
 
+                det_centers = []
+                det_ids = []
+                for t in trackers:
+                    cv2.rectangle(frame, (int(t[0]), int(t[1])), (int(t[2]), int(t[3])), (0, 0, 255), 2)
+                    cv2.rectangle(frame, (int(t[0]), int(t[1])), (int(t[0] + 60), int(t[1] + 30)), (0, 0, 255), -1)
+                    det_centers.append((int(t[0] + t[2] / 2), int(t[1] + t[3] / 2)))
+                    cv2.putText(frame, str(int(t[4])), (int(t[0]), int(t[1] + 25)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0),2)
+                    det_ids.append(int(t[4]))
 
+                accumulator.update(
+                        gt_ids,  # Ground truth objects in this frame
+                        det_ids,  # Detector hypotheses in this frame
+                        mm.distances.norm2squared_matrix(gt_centers, det_centers)
+                        # Distances from object 1 to hypotheses 1, 2, 3 and Distances from object 2 to hypotheses 1, 2, 3
+                    )
 
-            #     accumulator.update(
-            #         gt_ids,  # Ground truth objects in this frame
-            #         pred_ids,  # Detector hypotheses in this frame
-            #         mm.distances.norm2squared_matrix(gt_centers, pred_centers)
-            #         # Distances from object 1 to hypotheses 1, 2, 3 and Distances from object 2 to hypotheses 1, 2, 3
-            #     )
-            # mh = mm.metrics.create()
-            # summary = mh.compute(accumulator, metrics=['precision', 'recall', 'idp', 'idr', 'idf1'], name='acc')
-            # print(summary)
-            # Get the detections
+                cv2.imwrite(f"tracking_frames/{file.split('/')[1]}/{frame_num}.jpg", frame)
 
-        # # --- EVALUATION ---
-        # # Load the saved weights
-        # cfg.MODEL.WEIGHTS = os.path.join('models', model_name + ".pth")
-        # cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.6  # set a custom testing threshold
-        #
-        # # Create the predictor
-        # predictor = DefaultPredictor(cfg)
-        #
-        # # Load the test dataset
-        # dataset_dicts = register_city_challenge('splits/test.txt')
-        #
-        # # Find the different cameras i.e. c010, c011, c012, ...
-        # # Create a dictionary in which the key is the camera name and the value is the mm.MOTAccumulator object of that camera
-        # cameras = {}
-        #
-        # # Obtain the name of the first camera and initialize the sort and accumulator
-        # camera_name = dataset_dicts[0]['file_name'].split('/')[2]
-        # tracker = Sort(min_hits=5)
-        # accumulator = mm.MOTAccumulator(auto_id=True)
-        #
-        # for idx, d in enumerate(dataset_dicts):
-        #     image_path = d['file_name']                         # Image path
-        #     gt_ids = [an['id'] for an in d['annotations']]      # Ground truth ids
-        #     gt_bboxes = [an['bbox'] for an in d['annotations']] # Ground truth boxes
-        #     gt_centers = [(bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2) for bbox in gt_bboxes]
-        #
-        #     # If the camera is not in the dictionary create a new entry and the tracker
-        #     if image_path.split('/')[2] is not camera_name:
-        #         cameras[camera_name] = accumulator
-        #         tracker = Sort(min_hits=5)
-        #         accumulator = mm.MOTAccumulator(auto_id=True)
-        #
-        #     camera_name = image_path.split('/')[2]
-        #     im = cv2.imread(d["file_name"])                     # Read the image
-        #     output = predictor(im)                              # Predictions
-        #
-        #     pred_bboxes = output['instances'].pred_boxes.tensor.cpu().numpy()  # Predicted boxes
-        #     pred_bboxes = [box.tolist() for box in pred_bboxes]  # Convert to list
-        #
-        #     pred_scores = output['instances'].scores.cpu().numpy().tolist()  # Predicted boxes
-        #
-        #     bboxes_score = []
-        #     for bbox, score in zip(pred_bboxes, pred_scores):
-        #         bbox.append(score)
-        #         bboxes_score.append(bbox)
-        #
-        #     print(idx, np.array(bboxes_score))
-        #     trackers = tracker.update(np.array(bboxes_score))     # Update the tracker
-        #
-        #     pred_centers = []
-        #     pred_ids = []
-        #     for t in trackers:
-        #         pred_centers.append((int(t[0] + t[2] / 2), int(t[1] + t[3] / 2)))
-        #         pred_ids.append(int(t[4]))
-        #     plotBBoxes(im, saveFrames=None, pred_bboxes=pred_bboxes)
-        #
-        #     cv2.imshow('image', im)
-        #     if cv2.waitKey(1) & 0xFF == ord('q'):
-        #         break
-        #
-        #     accumulator.update(
-        #         gt_ids,  # Ground truth objects in this frame
-        #         pred_ids,  # Detector hypotheses in this frame
-        #         mm.distances.norm2squared_matrix(gt_centers, pred_centers)
-        #         # Distances from object 1 to hypotheses 1, 2, 3 and Distances from object 2 to hypotheses 1, 2, 3
-        #     )
-        #
-        # cameras[camera_name] = accumulator
-        #
-        # for cam_name in cameras:
-        #     print(cam_name)
-        #     mh = mm.metrics.create()
-        #     print(mh.compute(accumulator, metrics=['precision', 'recall', 'idp', 'idr', 'idf1'], name='acc'))
-        #
-        #
+            mh = mm.metrics.create()
+            summary = mh.compute(accumulator, metrics=['precision', 'recall', 'idp', 'idr', 'idf1'], name='acc')
+            print(summary)
+
+    # DEEP SORT
+    # if 'TRACK' in ACTIONS:
+    #
+    #     txt = open('splits/test.txt', 'r')
+    #     test_files = txt.read().splitlines()
+    #     for file in test_files:
+    #         print(file.split('/')[1])
+    #         predicions = load_labels('inference', file.split('/')[1] + '.txt')
+    #         ground_truth = load_labels(f'frames/{file}', 'gt.txt')
+    #
+    #         # Create an accumulator that will be updated during each frame
+    #         accumulator = mm.MOTAccumulator(auto_id=True)
+    #
+    #         # Initialize tracker
+    #         max_cosine_distance = 0.5
+    #         nn_budget = None
+    #         nms_max_overlap = 0.3
+    #
+    #         metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
+    #         tracker = Tracker(metric)
+    #
+    #         for frame in sorted(glob.glob(f'frames/{file}/*.jpg')):
+    #             frame_num = frame.split('/')[-1].split('.')[0]
+    #
+    #             frame_gt = ground_truth.get(frame_num, [])
+    #             frame_pred = predicions.get(frame_num, [])
+    #             # Obtain the gt and detected bboxes of the current frame
+    #             gt_bboxes = [detection['bbox'] for detection in frame_gt]
+    #             pred_bboxes = [Detection(detection['bbox'], 1.0, None) for detection in frame_pred]
+    #
+    #             # Run non-maxima suppression on the detected bboxes
+    #             boxes = np.array([d.tlwh for d in pred_bboxes])
+    #             scores = np.array([d.confidence for d in pred_bboxes])
+    #             indices = preprocessing.non_max_suppression(boxes, nms_max_overlap, scores)
+    #             pred_bboxes = [pred_bboxes[i] for i in indices]
+    #
+    #             # # Obtain the centers of the ground truth detections
+    #             # gt_centers = [(bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2) for bbox in gt_bboxes]
+    #             # gt_ids = [detection['id'] for detection in frame_gt]
+    #
+    #             print(frame_num, pred_bboxes)
+    #
+    #             # Pass the frame detections to the tracker
+    #             tracker.predict()
+    #             tracker.update(pred_bboxes)

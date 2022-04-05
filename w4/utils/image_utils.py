@@ -104,12 +104,13 @@ def plotBBoxes(img, saveFrames=None, **bboxes):
             i.e., if we wanted to plot the gt and the predicted bboxes, we would call the function as follows:
             plotBBoxes(img, saveFrames, gt_bbox, pred_bbox) where gt_bbox and pred_bbox are a list of the bounding boxes to plot.
     """
-    COLORS=[(0,0,255), (0,255,0)]
+
+    COLORS=[(0,0,255), (0,255,0), (0,128,255), (255,255,0),
+            (255,0,0), (255,0,255), (0,255,255), (255,0,128)]
 
     for idx, set_bboxes in enumerate(bboxes.values()):
         for bbox in set_bboxes:
-            bbox = [round(x) for x in bbox]
-            cv2.rectangle(img, (bbox[0], bbox[1]), (bbox[2], bbox[3]), COLORS[idx], 2)
+                cv2.rectangle(img, (round(bbox[0]), round(bbox[1])), (round(bbox[2]), round(bbox[3])), COLORS[idx], 2)
 
     if saveFrames is not None:
         cv2.imwrite(saveFrames, img)
