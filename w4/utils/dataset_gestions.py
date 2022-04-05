@@ -5,11 +5,13 @@ import glob
 import subprocess
 import cv2
 from tqdm import tqdm
-def update_labels(labels, frame_id, xmin, ymin, xmax, ymax, confidence):
+def update_labels(labels, frame_id, id, xmin, ymin, xmax, ymax, confidence):
     """
-    This function uploades the labels
+    This function uploades the labels.
+    CAREFUL! if this function crashes, might be because id is missing in the anterior implementations...
     :param labels: dictionary of all the labels (annotations)
     :param frame_id: id of the frame
+    :param id: unique identifier of the object
     :param xmin: coordinate x top left bbox
     :param ymin: coordinate y top left bbox
     :param xmax: coordinate x bottom right bbox
@@ -21,13 +23,22 @@ def update_labels(labels, frame_id, xmin, ymin, xmax, ymax, confidence):
     obj_info = dict(
         name='car',
         bbox=[xmin, ymin, xmax, ymax],
-        confidence=confidence
+        confidence=confidence,
+        id=id
     )
 
     if frame_name not in labels.keys():
         labels.update({frame_name: [obj_info]})
     else:
-        labels[frame_name].append(obj_info)
+        # actualizamos id's modo gitano activado
+        append=True
+        for idx, detections in enumerate(labels[frame_name]):
+            if detections['bbox'][0] == xmin and detections['bbox'][1] == ymin:
+                labels[frame_name][idx].update(obj_info)
+                append=False
+
+        if append:
+            labels[frame_name].append(obj_info)
 
     return labels
 
@@ -50,9 +61,9 @@ def load_labels(path, name):
 
         labels = {}
         for frame in txt:
-            frame_id, _, xmin, ymin, width, height, confidence, _, _, _ = list(
+            frame_id, id, xmin, ymin, width, height, confidence, _, _, _ = list(
                 map(float, (frame.split('\n')[0]).split(',')))
-            update_labels(labels, frame_id, xmin, ymin, xmin + width, ymin + height, confidence)
+            update_labels(labels, int(frame_id), id, xmin, ymin, xmin + width, ymin + height, confidence)
 
         return labels
 
@@ -67,9 +78,11 @@ def load_labels(path, name):
                 # Only take into account 'cars'
                 if child.attrib['label'] not in 'car':
                     continue
-                for bbox in child.getchildren():
+                
+                id = child.attrib['id']
+                for bbox in list(child):
                     frame_id, xmin, ymin, xmax, ymax, _, _, _ = list(map(float, ([v for k, v in bbox.attrib.items()])))
-                    update_labels(labels, int(frame_id) + 1, xmin, ymin, xmax, ymax, 1.)
+                    update_labels(labels, int(frame_id) + 1, id, xmin, ymin, xmax, ymax, 1.)
 
         return labels
 
@@ -120,3 +133,28 @@ def get_frames_paths(path_frames):
     images_paths.sort()
 
     return images_paths
+
+
+def write_predictions(path,labels, model):
+    """
+    writes predictions from labels dictionary into a .txt
+    :param labels: labels dictionary of annotations
+    :param model: name of the model used to do inference
+    :return: -
+    """
+
+    os.makedirs(path, exist_ok=True)
+
+    print('writting predictions into a txt file...')
+    with open(path + '/' + model + ".txt", "w") as file:
+        for label in labels.items():
+            for detection in label[1]:
+                bbox = detection['bbox']
+                conf = detection['confidence']
+                id = detection['id']
+                # frame_id, id_detection (-1 bc only cars), bboxes, conf, x, y, z
+                #file.write(f'{int(label[0])+1},{id},{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]},{conf},-1,-1,-1\n')
+                file.write(f'{int(label[0])},{id},{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]},{conf},-1,-1,-1\n')
+
+
+    print('predictions written into a txt file...')
