@@ -7,12 +7,12 @@ import os
 import matplotlib.pyplot as plt
 
 
-root = '../'
+root = '../../data'
 gt_path = os.path.join(root, 'data_stereo_flow/training/flow_noc')
 ground_truth = read_OF(os.path.join(gt_path, '000045_10.png'))
 
-frame0 = cv2.imread('../data_stereo_flow/training/image_0/000045_10.png')
-frame1 = cv2.imread('../data_stereo_flow/training/image_0/000045_11.png')
+frame0 = cv2.imread('../../data/data_stereo_flow/training/image_0/000045_10.png')
+frame1 = cv2.imread('../../data/data_stereo_flow/training/image_0/000045_11.png')
 
 frame0_gray = cv2.cvtColor(frame0,cv2.COLOR_BGR2GRAY).astype(np.uint8)
 frame1_gray = cv2.cvtColor(frame1,cv2.COLOR_BGR2GRAY).astype(np.uint8)
@@ -21,8 +21,8 @@ window_size = 32
 search_area = 32
 method = 'euclidean'
 
-window_sizes = [4,8,16,32,64,128]
-search_areas = [4,8,16,32,64,128]
+window_sizes = [4] #,8,16,32,64,128]
+search_areas = [4] #,8,16,32,64,128]
 
 msen = []
 pepn = []
@@ -89,7 +89,10 @@ for i in tqdm(range(len(window_sizes))):
 
             msen.append(compute_msen(nocc_error))
             pepn.append(compute_pepn(nocc_error))
-            
+
+draw_OF_magnitude_direction(optical_flow)
+OF_quiver_visualize(frame0,optical_flow,10)
+
 with open('./times.pickle','wb') as f:
     pickle.dump(times,f)
     
