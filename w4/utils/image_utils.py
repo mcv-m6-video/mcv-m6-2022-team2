@@ -2,7 +2,8 @@ import cv2
 import os
 from tqdm import tqdm
 
-DDBB_ROOT = '../../data/AICity_data/train/'
+DDBB_ROOT = "../../data/AICity_data/train/"
+
 
 def read_and_save_video(video_path):
     """
@@ -28,21 +29,25 @@ def read_and_save_video(video_path):
     """
 
     # If the folder frames does not exist, create it
-    os.makedirs(os.path.join(os.getcwd(), 'frames'), exist_ok=True)
+    os.makedirs(os.path.join(os.getcwd(), "frames"), exist_ok=True)
 
     # If the folder of the corresponding sequence does not exist, create it
-    sequence_name = video_path.split('/')[-3]
-    os.makedirs(os.path.join(os.getcwd(), 'frames', sequence_name), exist_ok=True)
+    sequence_name = video_path.split("/")[-3]
+    os.makedirs(os.path.join(os.getcwd(), "frames", sequence_name), exist_ok=True)
 
     # If the folder of the corresponding video does not exist, create it as well as write the frames
-    cam_name = video_path.split('/')[-2]
+    cam_name = video_path.split("/")[-2]
 
-    if not os.path.exists(os.path.join(os.getcwd(), 'frames', sequence_name, cam_name)):
-        os.makedirs(os.path.join(os.getcwd(), 'frames', sequence_name, cam_name), exist_ok=True)
+    if not os.path.exists(os.path.join(os.getcwd(), "frames", sequence_name, cam_name)):
+        os.makedirs(
+            os.path.join(os.getcwd(), "frames", sequence_name, cam_name), exist_ok=True
+        )
 
         # Copy the ground truth txt to the corresponding frame folder
-        gt_path = os.path.join(video_path[:-8], 'gt', 'gt.txt')
-        os.system(f"cp {gt_path} {os.path.join(os.getcwd(), 'frames', sequence_name, cam_name, 'gt.txt')}")
+        gt_path = os.path.join(video_path[:-8], "gt", "gt.txt")
+        os.system(
+            f"cp {gt_path} {os.path.join(os.getcwd(), 'frames', sequence_name, cam_name, 'gt.txt')}"
+        )
 
         cap = cv2.VideoCapture(video_path)
 
@@ -51,7 +56,7 @@ def read_and_save_video(video_path):
             raise IOError("Could not open video")
 
         frame_num = 1
-        pbar = tqdm(desc=f'Reading and saving frames from {sequence_name}/{cam_name}')
+        pbar = tqdm(desc=f"Reading and saving frames from {sequence_name}/{cam_name}")
 
         # Read video
         while True:
@@ -61,7 +66,16 @@ def read_and_save_video(video_path):
                 break
 
             # Save frame
-            cv2.imwrite(os.path.join(os.getcwd(), 'frames', sequence_name, cam_name, f'{frame_num:04}.jpg'), frame)
+            cv2.imwrite(
+                os.path.join(
+                    os.getcwd(),
+                    "frames",
+                    sequence_name,
+                    cam_name,
+                    f"{frame_num:04}.jpg",
+                ),
+                frame,
+            )
             pbar.update(1)
             frame_num += 1
 
@@ -69,7 +83,8 @@ def read_and_save_video(video_path):
         cap.release()
 
     else:
-        print(f'Frames already saved for {sequence_name}/{cam_name}')
+        print(f"Frames already saved for {sequence_name}/{cam_name}")
+
 
 def read_txt_save_videos(txt_path):
     """
@@ -87,11 +102,12 @@ def read_txt_save_videos(txt_path):
     ----------------
     txt_path: path to the txt file with the paths to the videos
     """
-    with open(txt_path, 'r') as f:
+    with open(txt_path, "r") as f:
         for line in f:
             line = line.strip()
-            video_path = os.path.join(DDBB_ROOT, line, 'vdo.avi')
+            video_path = os.path.join(DDBB_ROOT, line, "vdo.avi")
             read_and_save_video(video_path)
+
 
 def plotBBoxes(img, saveFrames=None, **bboxes):
     """
@@ -105,12 +121,26 @@ def plotBBoxes(img, saveFrames=None, **bboxes):
             plotBBoxes(img, saveFrames, gt_bbox, pred_bbox) where gt_bbox and pred_bbox are a list of the bounding boxes to plot.
     """
 
-    COLORS=[(0,0,255), (0,255,0), (0,128,255), (255,255,0),
-            (255,0,0), (255,0,255), (0,255,255), (255,0,128)]
+    COLORS = [
+        (0, 0, 255),
+        (0, 255, 0),
+        (0, 128, 255),
+        (255, 255, 0),
+        (255, 0, 0),
+        (255, 0, 255),
+        (0, 255, 255),
+        (255, 0, 128),
+    ]
 
     for idx, set_bboxes in enumerate(bboxes.values()):
         for bbox in set_bboxes:
-                cv2.rectangle(img, (round(bbox[0]), round(bbox[1])), (round(bbox[2]), round(bbox[3])), COLORS[idx], 2)
+            cv2.rectangle(
+                img,
+                (round(bbox[0]), round(bbox[1])),
+                (round(bbox[2]), round(bbox[3])),
+                COLORS[idx],
+                2,
+            )
 
     if saveFrames is not None:
         cv2.imwrite(saveFrames, img)
