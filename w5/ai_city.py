@@ -22,7 +22,12 @@ class AICity:
     def __init__(
         self,
         data_path="../../data/AICity_data/train/",
-        weights="yolov5m",
+        model="yolov5m",
+        weights="",
+        hyp='yolov5/data/hyps/hyp.VOC.yaml',
+        epochs=200,
+        batch_size=16,
+        img_size=[640, 640],
         output_path="./",
         train_seq=["S01", "S04"],
         test_seq=["S03"],
@@ -42,15 +47,19 @@ class AICity:
 
         self.output_path = output_path  # Output path
 
-        self.model_params = dict(
+        # DETECTOR PARAMETERS
+        self.det_params = dict(
             mode=mode,
+            model=model,
             weights=weights,
-            epochs=200,
-            batch_size=32,
-            img_size=[640,640],
-            conf_thres=0.5,
-            iou_thres=0.5,
-            name="ultralytics",
+            hyp=hyp,
+            epochs=epochs,
+            batch_size=batch_size,
+            img_size=img_size,
+            conf_thres=0.2,
+            iou_thres=0.45,
+            name=model + '_'.join(train_seq),
+            #coco_model=args.coco_model
         )
 
         self.seq_train = train_seq  # List of train sequences
@@ -75,6 +84,7 @@ class AICity:
 
         if len(os.listdir(save_path)) == 4:
             print("Yolo data already converted!")
+            self.det_params.update({'data_yolo': join(save_path, 'cars.yaml')})
             return
 
         print("Preparing data for YOLOv5...")
@@ -95,10 +105,13 @@ class AICity:
         for split, paths in files_txt.items():
             paths = [path for cam in paths for path in cam]
             file_out = open(join(save_path, split + '.txt'), 'w')
+            print(join(save_path, split + '.txt'))
             file_out.writelines(paths)
             yaml_dict.update({split: join(save_path, split + '.txt')})
 
         write_yaml_file(yaml_dict, join(save_path, 'cars.yaml'))
+        self.det_params.update({'data_yolo': join(save_path, 'cars.yaml')})
+
         print('DONE!')
 
     def train(self):
@@ -107,7 +120,7 @@ class AICity:
         """
         #print(vars(self.model_params))
         self.data_to_yolo()
-        model = Ultralytics(weights=self.model_params["weights"], args=self.model_params)
+        model = Ultralytics(weights=self.det_params["weights"], args=self.det_params)
         model.train()
 
 class LoadSeq:

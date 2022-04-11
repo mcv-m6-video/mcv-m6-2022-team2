@@ -53,7 +53,7 @@ def video_to_frames(video_path):
         cap.release()
 
     else:
-        print(f"Frames already saved for {dirname(camera_path)}/{camera_path}")
+        print(f"Frames of {camera_path.split('/')[-2]}/{camera_path.split('/')[-1]} already saved...")
 
 
 def all_videos_to_frames(data_root="../../data/AICity_data/train"):
@@ -69,6 +69,44 @@ def all_videos_to_frames(data_root="../../data/AICity_data/train"):
     # For each video, read and save the frames
     for video in video_paths:
         video_to_frames(video)
+
+def plotBBoxes(img, saveFrames=None, **bboxes):
+    """
+    Plots a set of bounding boxes on an image.
+    parameters:
+    ----------------
+    img: numpy array of one frame of the sequence
+    saveFrames: if not None, saves the frame to the specified path
+    bboxes: list of bounding boxes to plot. As the argument is a *args type, several sets of bboxes can be drawn on the same frame.
+            i.e., if we wanted to plot the gt and the predicted bboxes, we would call the function as follows:
+            plotBBoxes(img, saveFrames, gt_bbox, pred_bbox) where gt_bbox and pred_bbox are a list of the bounding boxes to plot.
+    """
+
+    COLORS = [
+        (0, 0, 255),
+        (0, 255, 0),
+        (0, 128, 255),
+        (255, 255, 0),
+        (255, 0, 0),
+        (255, 0, 255),
+        (0, 255, 255),
+        (255, 0, 128),
+    ]
+
+    for idx, set_bboxes in enumerate(bboxes.values()):
+        for bbox in set_bboxes:
+            cv2.rectangle(
+                img,
+                (round(bbox[0]), round(bbox[1])),
+                (round(bbox[2]), round(bbox[3])),
+                COLORS[idx],
+                2,
+            )
+
+    if saveFrames is not None:
+        cv2.imwrite(saveFrames, img)
+
+    return img
 
 if __name__ == "__main__":
     all_videos_to_frames("../../../data/AICity_data/train")

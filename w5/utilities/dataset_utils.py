@@ -130,7 +130,7 @@ def to_yolo(data, gt_bboxes):
     splits_txt = {}
     for split, split_data in data.items():
         files = []
-        for cam, paths in tqdm(split_data.items(), 'Preparing ' + split + ' data for YOLOv3'):
+        for cam, paths in tqdm(split_data.items(), 'Preparing ' + split + ' data for YOLOv5'):
             txts = glob.glob(os.path.dirname(paths[0]) + '/*.txt')
 
             for path in paths:
