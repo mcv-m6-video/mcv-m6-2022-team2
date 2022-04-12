@@ -1,6 +1,6 @@
 import json
 
-def saveData(path, data):
+def save_json(path, data):
     """
     Saves data to a json file
     :param path:
@@ -11,7 +11,7 @@ def saveData(path, data):
         json.dump(data, metadataFile)
 
 
-def loadData(path):
+def load_json(path):
     """
     Loads data from a json file
     :param path:

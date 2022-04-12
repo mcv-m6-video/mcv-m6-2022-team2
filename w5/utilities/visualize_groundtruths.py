@@ -2,11 +2,15 @@ import cv2
 import time
 from dataset_utils import load_annot
 from image_utils import plotBBoxes
+from os.path import join
 
-labels_path = '/home/david/Workspace/data/AICity_data/train/S01/c001/gt'
-labels = load_annot(labels_path, 'gt.txt')
+DATA_ROOT = '../../../data/AICity_data/train'
+SEQ = 'S04'
+CAM = 'c034'
 
-video = cv2.VideoCapture('../../data/AICity_data/train/S01/c001/vdo.avi')
+labels = load_annot(join(DATA_ROOT, SEQ, CAM, 'gt'), 'gt.txt')
+video = cv2.VideoCapture(join(DATA_ROOT, SEQ, CAM, 'vdo.avi'))
+
 cv2.namedWindow("frame", cv2.WINDOW_NORMAL)        # Create window with freedom of dimensions
 
 count = 1

@@ -159,6 +159,21 @@ def write_yaml_file(yaml_dict, yaml_file):
     if exists(yaml_file):
         print('YAML file ' + yaml_file + ' written successfully!')
 
+def write_predictions(path, annotations):
+    """
+    Write the predictions in the .txt file.
+    :param path: txt file path where the predictions will be written. You must ensure that the subfolders exist
+    :param annotations: list of list with all predicions. It has to have the following format:
+    [[frame_id, id, xmin, ymin, xmax, ymax, confidence],
+     [frame_id, id, xmin, ymin, xmax, ymax, confidence],
+        ...
+    ]
+    """
+    with open(path, 'w') as f:
+        for anno in annotations:
+            f.write(f'{int(anno[0])},{int(anno[1])},{int(anno[2])},{int(anno[3])},{int(anno[4])},{int(anno[5])},{anno[6]},-1,-1,-1\n')
+
+
 def get_weights(model):
     os.makedirs('data/weights/', exist_ok=True)
     if model.endswith('.pt') or model.endswith('.pkl'):
