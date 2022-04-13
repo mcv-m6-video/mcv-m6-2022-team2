@@ -2,12 +2,18 @@ import os
 import random
 import cv2
 import torch
+from matplotlib import pyplot as plt
+
 import wandb
+import motmetrics as mm
+import numpy as np
 from glob import glob
+from scipy import ndimage
 from os.path import join, exists
 from tqdm import tqdm
+from sort.sort import Sort
 
-from utilities.image_utils import all_videos_to_frames
+from utilities.image_utils import all_videos_to_frames, filter_roi
 from utilities.json_loader import load_json, save_json
 from utilities.dataset_utils import load_annot, write_predictions
 from utilities.detectron_utils import MyTrainer
@@ -18,8 +24,6 @@ from detectron2.structures import BoxMode
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.engine import DefaultTrainer, DefaultPredictor
 
-
-
 class AICity:
     """
     Class for the AI City challenge. It contains the methods the data distribution and the methods to load data.
@@ -29,7 +33,8 @@ class AICity:
         data_path="../../data/AICity_data/train/",
         model_yaml="COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml",
         epochs=5000,
-        batch_size=16,
+        batch_size=2,
+        train_val_split=0.2,
         train_seq=["S01", "S04"],
         test_seq=["S03"],
     ):
@@ -51,6 +56,17 @@ class AICity:
 
         self.seq_train = train_seq
         self.seq_test = test_seq
+
+        self.masks = {}
+        print("Loading masks...")
+        for seq in train_seq + test_seq:
+            for cam in sorted(os.listdir(join(self.data_path, seq))):
+                roi = cv2.imread(join(self.data_path, seq, cam, "roi.jpg"), cv2.IMREAD_GRAYSCALE)/255
+                # Compute the distance to the roi for each pixel
+                self.masks[cam] = ndimage.distance_transform_edt(roi)
+
+        # Create the train/val split
+        self.train_val_split(split=train_val_split)
 
         # Create the video frames if not done before
         print('CAREFUL!!! The following function will store around 34000 files and 29.5GB of data in your computer.')
@@ -215,22 +231,19 @@ class AICity:
 
         # --- PREPARE THE ENVIRONMENT ---
 
-        # 1. Divide the dataset into train, val and test
-        self.train_val_split(split=0)
-
-        # 2. Register the dataset splits
+        # 1. Register the dataset splits
         for mode in ['train', 'val', 'test']:
             DatasetCatalog.register("AICity_" + mode, lambda mode=mode: self.register_dataset(mode=mode))
             MetadataCatalog.get('AICity_' + mode).set(thing_classes=['car'])
 
-
         # --- TRAINING ---
+
         # 1. Init WandB
         wandb.init(project="M6-week5", entity='celulaeucariota', name=self.model_name, sync_tensorboard=True)
 
         # 2. Train the model
         trainer = DefaultTrainer(self.cfg)           # Create object
-        trainer.resume_or_load(resume=True)     # If the model has been already trained, load it
+        trainer.resume_or_load(resume=False)     # If the model has been already trained, load it
         trainer.train()                         # Train
 
         # 3. Save the Model
@@ -242,8 +255,6 @@ class AICity:
         Perform detection inference on the test set
         :return:
         """
-
-        self.train_val_split(split=0)
 
         # Load the saved weights
         self.cfg.MODEL.WEIGHTS = join('data', 'fasterrcnn', '-'.join(self.seq_train), 'models', f"{self.model_name}.pth")
@@ -285,14 +296,15 @@ class AICity:
 
                 for bbox, score in zip(pred_bboxes, pred_scores):
                     x1, y1, x2, y2 = bbox
-                    annotations.append([int(frame_num), -1, x1, y1, x2, y2, score])
+                    # Save the BBoxes in x1, y1, witdh, height format as in the ground truth
+                    annotations.append([int(frame_num), -1, x1, y1, x2-x1, y2-y1, score])
 
                 pbar.update(1)
 
             write_predictions(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'predictions', f"{cam_name}.txt"), annotations)
 
     def sc_tracking(self):
-        # TODO: Implement Single-Camera Tracking algorithm
+        # TODO: END Single-Camera Tracking algorithm
         """
         :return:
         """
@@ -300,18 +312,86 @@ class AICity:
         # Create folder to store the tracking results
         os.makedirs(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'sc_tracking'), exist_ok=True)
 
+        # Iterate through the txt camera files to perform the tracking
+        for cam_txt in sorted(os.listdir(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'predictions'))):
 
+            # Load the detections and the ground truths of the corresponding camera
+            predictions = load_annot(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'predictions'), cam_txt)
+            ground_truth = load_annot(join(self.data_path, self.seq_test[0], cam_txt.split('.')[0], 'gt'), 'gt.txt')
+
+            # Create the accumulator that will be updated during each frame
+            accumulator = mm.MOTAccumulator(auto_id=True)
+
+            # Create the tracker
+            tracker = Sort()
+
+            tracking_predicitons = []
+            # Iterate through the frames
+            for img_path in tqdm(sorted(glob(join(self.data_path, self.seq_test[0], cam_txt.split('.')[0], 'frames', '*.jpg')))[:-5], desc=f"Tracking {cam_txt.split('.')[0]}"):
+
+                frame_num = img_path.split('/')[-1].split('.')[0]
+
+                # Obtain the Ground Truth and predictions for the current frame
+                # Using the function get() to avoid crashing when there is no key with that string
+                gt_annotations = ground_truth.get(frame_num, [])
+                pred_annotations = predictions.get(frame_num, [])
+
+                # Obtain the Ground Truth and predictions for the current frame
+                gt_bboxes = [anno['bbox'] for anno in gt_annotations]
+                pred_bboxes = [anno['bbox'] for anno in pred_annotations]
+                pred_scores = [anno['confidence'] for anno in pred_annotations]
+                pred_bboxes = [[box[0], box[1], box[2], box[3], score] for box, score in zip(pred_bboxes,pred_scores)]  # Convert to list
+
+                # Filter ROI bboxes
+                filter_roi(pred_bboxes, self.masks[cam_txt.split('.')[0]], th=100)
+
+                # Obtain the Ground Truth centers and track IDs
+                gt_centers = [(bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2) for bbox in gt_bboxes]
+                gt_ids = [anno['obj_id'] for anno in gt_annotations]
+
+                # Update tracker
+                if len(pred_bboxes) == 0:
+                    trackers = tracker.update(np.empty((0, 5)))
+                else: trackers = tracker.update(np.array(pred_bboxes))
+
+                det_centers = []
+                det_ids = []
+
+                for t in trackers:
+                    det_centers.append((int(t[0] + t[2] / 2), int(t[1] + t[3] / 2)))
+                    det_ids.append(int(t[4]))
+                    tracking_predicitons.append([frame_num, int(t[4]), int(t[0]), int(t[1]), int(t[2]-t[0]), int(t[3]-t[1]), 1])
+
+                accumulator.update(
+                    gt_ids,  # Ground truth objects in this frame
+                    det_ids,  # Detector hypotheses in this frame
+                    mm.distances.norm2squared_matrix(gt_centers, det_centers)
+                    # Distances from object 1 to hypotheses 1, 2, 3 and Distances from object 2 to hypotheses 1, 2, 3
+                )
+
+            # Write the tracking results
+            write_predictions(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'sc_tracking', f"{cam_txt.split('.')[0]}.txt"), tracking_predicitons)
+
+            # Compute the metrics
+            mh = mm.metrics.create()
+            summary = mh.compute(accumulator, metrics=['precision', 'recall', 'idp', 'idr', 'idf1'], name='acc')
+            print(summary)
 
 if __name__== "__main__":
     aic = AICity(data_path="../../data/AICity_data/train/",
                  model_yaml="COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml",
-                 epochs=100,
+                 epochs=5000,
                  batch_size=2,
+                 train_val_split=0,
                  train_seq=["S01", "S04"],
                  test_seq=["S03"],
                  )
 
-    aic.detection_inference()
+    aic.train_detectron2()      # Train the detector
+    aic.detection_inference()   # Run the detector on the test sequences
+    aic.sc_tracking()           # Run the tracker on the test predicted detections
+
+
 
 
 

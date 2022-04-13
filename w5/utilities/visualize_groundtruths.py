@@ -1,18 +1,26 @@
 import cv2
 import time
+
+from scipy import ndimage
+
 from dataset_utils import load_annot
 from image_utils import plotBBoxes
 from os.path import join
 
-DATA_ROOT = '../../../data/AICity_data/train'
-SEQ = 'S04'
-CAM = 'c034'
+from image_utils import filter_roi
 
-labels = load_annot(join(DATA_ROOT, SEQ, CAM, 'gt'), 'gt.txt')
+DATA_ROOT = '../../../data/AICity_data/train'
+SEQ = 'S03'
+CAM = 'c014'
+
+#labels = load_annot(join(DATA_ROOT, SEQ, CAM, 'gt'), 'gt.txt')
+
+labels = load_annot(join('..', 'data', 'fasterrcnn', 'S01-S04', 'sc_tracking'), 'c014.txt')
 video = cv2.VideoCapture(join(DATA_ROOT, SEQ, CAM, 'vdo.avi'))
 
 cv2.namedWindow("frame", cv2.WINDOW_NORMAL)        # Create window with freedom of dimensions
-
+roi = cv2.imread(join(DATA_ROOT, SEQ, CAM, "roi.jpg"), cv2.IMREAD_GRAYSCALE) / 255
+roi = ndimage.distance_transform_edt(roi)
 count = 1
 while True:
     ret, frame = video.read()
@@ -23,9 +31,14 @@ while True:
 
         # Obtain the frame BBoxes
         annotations = labels.get(f'{count:04}',[])   # To avoid crashing when the frame does not contain annotations
+
         if len(annotations) > 0:
-            annotations = [annotation['bbox'] for annotation in annotations]
-            plotBBoxes(frame, saveFrames=None, annotations=annotations)
+            bboxes = [annotation['bbox'] for annotation in annotations]
+            obj_ids = [annotation['obj_id'] for annotation in annotations]
+            detections = [[box[0], box[1], box[2], box[3], obj_id] for box, obj_id in zip(bboxes, obj_ids)]
+            detections = filter_roi(detections, roi, th=100)
+            #annotations = [[annot[0], annot[1], annot[2]-annot[0], annot[3]-annot[1]] for annot in annotations]
+            plotBBoxes(frame, saveFrames=None, annotations=detections)
 
         cv2.imshow('frame', frame)
         time.sleep(0.05)

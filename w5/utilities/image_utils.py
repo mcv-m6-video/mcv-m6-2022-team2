@@ -70,6 +70,33 @@ def all_videos_to_frames(data_root="../../data/AICity_data/train"):
     for video in video_paths:
         video_to_frames(video)
 
+def compute_bbox_centroid(bbox):
+    """
+    Compute the centroid of a bounding box.
+    :param
+        bbox: bounding box (xmin, ymin, xmax, ymax)
+    :return
+        centroid: (x, y)
+    """
+    return (int((bbox[0] + bbox[2]) / 2), int((bbox[1] + bbox[3]) / 2))
+
+
+def filter_roi(bboxes, roi_dist, th=50):
+    """
+    Filter the bounding boxes that are too close to the ROI.
+    :param bboxes: list of bounding boxes (xmin, ymin, xmax, ymax)
+    :param roi_dist: ndimage.distance object in which each pixel has the distance to the ROI
+    :param th: int, distance in which the bboxes are discarted
+    :return: list, filtered bounding boxes
+    """
+    filtered_bboxes = []
+    for bbox in bboxes:
+        centroid = compute_bbox_centroid(bbox)
+        if roi_dist[centroid[1], centroid[0]] > th:
+            filtered_bboxes.append(bbox)
+    return filtered_bboxes
+
+
 def plotBBoxes(img, saveFrames=None, **bboxes):
     """
     Plots a set of bounding boxes on an image.
@@ -93,15 +120,47 @@ def plotBBoxes(img, saveFrames=None, **bboxes):
         (255, 0, 128),
     ]
 
+    LETTERS = [
+        (0, 0, 0),
+        (0, 0, 0),
+        (0, 0, 0),
+        (0, 0, 0),
+        (255, 255, 255),
+        (0, 0, 0),
+        (0, 0, 0),
+        (255, 255, 255),
+    ]
+
+
     for idx, set_bboxes in enumerate(bboxes.values()):
         for bbox in set_bboxes:
-            cv2.rectangle(
-                img,
-                (round(bbox[0]), round(bbox[1])),
-                (round(bbox[2]), round(bbox[3])),
-                COLORS[idx],
-                2,
-            )
+            if len(bbox) == 5:
+                cv2.rectangle(img,
+                              (round(bbox[0]), round(bbox[1])),
+                              (round(bbox[2]), round(bbox[3])),
+                              COLORS[int(bbox[4] % len(COLORS))],
+                              2,
+                              )
+                cv2.rectangle(img,
+                              (int(bbox[0]), int(bbox[1])),
+                              (int(bbox[0] + 60), int(bbox[1] + 30)),
+                              COLORS[int(bbox[4] % len(COLORS))],
+                              -1)
+                cv2.putText(img,
+                            str(int(bbox[4])),
+                            (int(bbox[0]), int(bbox[1] + 25)),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            1,
+                            LETTERS[int(bbox[4] % len(LETTERS))],
+                            2)
+            else:
+                cv2.rectangle(
+                    img,
+                    (round(bbox[0]), round(bbox[1])),
+                    (round(bbox[2]), round(bbox[3])),
+                    COLORS[idx],
+                    2,
+                )
 
     if saveFrames is not None:
         cv2.imwrite(saveFrames, img)
