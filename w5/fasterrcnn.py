@@ -355,9 +355,9 @@ class AICity:
             # FILTER PARKED CARS
             predictions = list_to_dict(predictions)
 
-            predictions = filter_parked_cars(predictions,
-                                             sorted(glob(join(self.data_path, self.seq_test[0], cam_txt.split('.')[0], 'frames', '*.jpg'))),
-                                             25)
+            predictions = filter_parked_cars(annotations=predictions,
+                                             img_paths=sorted(glob(join(self.data_path, self.seq_test[0], cam_txt.split('.')[0], 'frames', '*.jpg'))),
+                                             var_th=25)
 
             predictions = list_to_dict(predictions)
 
