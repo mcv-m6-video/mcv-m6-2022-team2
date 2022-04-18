@@ -159,6 +159,56 @@ def write_yaml_file(yaml_dict, yaml_file):
     if exists(yaml_file):
         print('YAML file ' + yaml_file + ' written successfully!')
 
+def list_to_dict(list_data):
+    """
+    Convert list of data to dict.
+    The input data should be a list of list with the annotations in the following format:
+
+    INPUT:
+    [[frame_id, obj_id, xmin, ymin, xmax, ymax, conf],
+     [frame_id, obj_id, xmin, ymin, xmax, ymax, conf],
+     [frame_id, obj_id, xmin, ymin, xmax, ymax, conf],
+     ...]
+
+    The output data is a dictionary with the following format:
+
+    OUTPUT:
+    {frame_id: [{'name': 'car',
+                 'obj_id': obj_id,
+                 'bbox': [xmin, ymin, xmax, ymax],
+                 'confidence': conf},
+                {'name': 'car',
+                 'obj_id': obj_id,
+                 'bbox': [xmin, ymin, xmax, ymax],
+                 'confidence': conf}
+                    ...]
+     frame_id: [{'name': 'car',
+                 'obj_id': obj_id,
+                 'bbox': [xmin, ymin, xmax, ymax],
+                 'confidence': conf},
+                {'name': 'car',
+                 'obj_id': obj_id,
+                 'bbox': [xmin, ymin, xmax, ymax],
+                 'confidence': conf}
+                    ...]
+     ...
+    }
+
+    :param list_data: list of data
+    :return: dict of data
+    """
+    data = {}
+    for item in list_data:
+        obj = {'name': 'car',
+               'obj_id': item[1],
+               'bbox': [item[2], item[3], item[4], item[5]],
+                'confidence': item[6]}
+
+        if data.get(item[0]) is None:
+            data[item[0]] = [obj]
+        else: data[item[0]].append(obj)
+    return data
+
 def write_predictions(path, annotations):
     """
     Write the predictions in the .txt file.

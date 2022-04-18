@@ -2,8 +2,13 @@ import os
 import cv2
 import glob
 import random
+import motmetrics as mm
+
+import numpy as np
 from tqdm import tqdm
 from os.path import dirname, join, exists
+
+from sort.sort import Sort
 
 def video_to_frames(video_path):
     """
@@ -96,6 +101,121 @@ def filter_roi(bboxes, roi_dist, th=50):
             filtered_bboxes.append(bbox)
     return filtered_bboxes
 
+def tracking(img_paths, ground_truth, predictions, roi=None, roi_th=50):
+    """
+    Compute the tracking and its evaluation given a list of predictions and ground truths.
+    This function is able to do the tracking with and without filtering the detections by a mask.
+    If a parameter roi is passed, the tracking will be done only in the region of interest.
+    :param img_paths: list of image paths corresponding the predictions
+    :param ground_truth: list of ground truth bounding boxes in the format of load_annot
+    :param predictions: list of predictions bounding boxes in the format of load_annot
+    :param roi: ndimage.distance object
+    :param roi_th: mask threshold
+    :return: list of predictions with the corresponding obj_id for each detection
+    :return: idf1 score of the corresponding sequence
+    """
+
+    # Create the accumulator that will be updated during each frame
+    accumulator = mm.MOTAccumulator(auto_id=True)
+
+    # Create the tracker
+    tracker = Sort()
+
+    tracking_predicitons = []
+    # Iterate through the frames
+    for img_path in tqdm(img_paths, desc=f"Tracking {img_paths[0].split('/')[-3]}"):
+
+        frame_num = img_path.split('/')[-1].split('.')[0]
+
+        # Obtain the Ground Truth and predictions for the current frame
+        # Using the function get() to avoid crashing when there is no key with that string
+        gt_annotations = ground_truth.get(frame_num, [])
+        pred_annotations = predictions.get(frame_num, [])
+
+        # Obtain the Ground Truth and predictions for the current frame
+        gt_bboxes = [anno['bbox'] for anno in gt_annotations]
+        pred_bboxes = [anno['bbox'] for anno in pred_annotations]
+        pred_scores = [anno['confidence'] for anno in pred_annotations]
+        pred_bboxes = [[box[0], box[1], box[2], box[3], score] for box, score in
+                       zip(pred_bboxes, pred_scores)]  # Convert to list
+
+        # If roi is not None, filter predictions
+        if roi is not None:
+            pred_bboxes = filter_roi(bboxes=pred_bboxes, roi_dist=roi, th=roi_th)
+
+        # Obtain the Ground Truth centers and track IDs
+        gt_centers = [(bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2) for bbox in gt_bboxes]
+        gt_ids = [anno['obj_id'] for anno in gt_annotations]
+
+        # Update tracker
+        if len(pred_bboxes) == 0:
+            trackers = tracker.update(np.empty((0, 5)))
+        else:
+            trackers = tracker.update(np.array(pred_bboxes))
+
+        det_centers = []
+        det_ids = []
+
+        for t in trackers:
+            det_centers.append((int(t[0] + t[2] / 2), int(t[1] + t[3] / 2)))
+            det_ids.append(int(t[4]))
+            tracking_predicitons.append(
+                [frame_num, int(t[4]), int(t[0]), int(t[1]), int(t[2] - t[0]), int(t[3] - t[1]), 1])
+
+        accumulator.update(
+            gt_ids,  # Ground truth objects in this frame
+            det_ids,  # Detector hypotheses in this frame
+            mm.distances.norm2squared_matrix(gt_centers, det_centers)
+            # Distances from object 1 to hypotheses 1, 2, 3 and Distances from object 2 to hypotheses 1, 2, 3
+        )
+
+    # Compute the metrics
+    mh = mm.metrics.create()
+    summary = mh.compute(accumulator, metrics=['precision', 'recall', 'idp', 'idr', 'idf1'], name='acc')
+    print(summary)
+
+    return tracking_predicitons, summary['idf1']['acc']
+
+def filter_parked_cars(annotations, img_paths, var_th=25):
+    """
+    Filter the parked cars from the annotations. This is done by computing the variance of the bounding boxes which
+    correspond to the same object ID.
+    :param annotations: list of predictions bounding boxes in the format of load_annot
+    :param img_paths: list of image paths corresponding the predictions
+    :param var_th: variance threshold in which the bounding boxes are considered as parked cars
+    :return: list of filtered predictions with the corresponding obj_id for each detection
+    """
+    # Create a dictionary where the keys are the track IDs and the values are the list of bboxes
+    track_bboxes = {}
+    for img_path in img_paths:
+        frame_num = img_path.split('/')[-1].split('.')[0]
+
+        frame_annotations = annotations.get(frame_num, [])
+        for obj in frame_annotations:
+            if obj['obj_id'] not in track_bboxes:
+                track_bboxes[obj['obj_id']] = [compute_bbox_centroid(obj['bbox'])]
+            else:
+                track_bboxes[obj['obj_id']].append(compute_bbox_centroid(obj['bbox']))
+
+    filtered_tracks = []
+    for track_id, centroids in track_bboxes.items():
+        if np.mean(np.std(centroids, axis=0)) > var_th:
+            filtered_tracks.append(track_id)
+
+    filtered_detections = []
+    for img_path in img_paths:
+        frame_num = img_path.split('/')[-1].split('.')[0]
+
+        frame_annotations = annotations.get(frame_num, [])
+        frame_filtered_annotations = []
+        for anno in frame_annotations:
+            if anno['obj_id'] in filtered_tracks:
+                frame_filtered_annotations.append(anno)
+                filtered_detections.append([frame_num, int(anno['obj_id']), int(anno['bbox'][0]), int(anno['bbox'][1]),
+                                            int(anno['bbox'][2] + anno['bbox'][0]),
+                                            int(anno['bbox'][3] + anno['bbox'][1]), 1])
+
+    return filtered_detections
 
 def plotBBoxes(img, saveFrames=None, **bboxes):
     """
