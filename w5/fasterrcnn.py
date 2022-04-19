@@ -2,21 +2,21 @@ import os
 import random
 import cv2
 import torch
-from matplotlib import pyplot as plt
-
 import wandb
-import motmetrics as mm
 import numpy as np
+import torchvision.transforms as transforms
 from glob import glob
 from scipy import ndimage
-from os.path import join, exists
+from os.path import join, exists, dirname
 from tqdm import tqdm
-from sort.sort import Sort
+from torch import optim
+from torch.optim import lr_scheduler
+from torch.utils.data import DataLoader
 
 from utilities.image_utils import all_videos_to_frames, filter_roi, compute_bbox_centroid, tracking, filter_parked_cars
 from utilities.json_loader import load_json, save_json
 from utilities.dataset_utils import load_annot, write_predictions, list_to_dict
-from utilities.detectron_utils import MyTrainer
+from utilities.mtmc_utils import TripletDataset, EmbeddingNet, TripletNet, TripletLoss, fit
 
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
@@ -243,7 +243,7 @@ class AICity:
 
         # 2. Train the model
         trainer = DefaultTrainer(self.cfg)           # Create object
-        trainer.resume_or_load(resume=False)     # If the model has been already trained, load it
+        trainer.resume_or_load(resume=True)     # If the model has been already trained, load it
         trainer.train()                         # Train
 
         # 3. Save the Model
@@ -375,8 +375,81 @@ class AICity:
         print(f'ROI: {np.mean(roi_predictions)}')
         print(f'PARKED: {np.mean(parked_predictions)}')
 
+    print('')
+
+    def reid_train(self):
+        """
+
+        :return:
+        """
+
+        if torch.cuda.is_available():
+            print(f'Training the model in {torch.cuda.get_device_name(torch.cuda.current_device())}')
+        else:
+            print('CAREFUL!! Training the model with CPU')
+
+        # Create the output folder, if it does not exist
+        os.makedirs(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'models'), exist_ok=True)
+
+        backbone = 'resnet50'
+
+        # Transform the output of the Dataset object into Tensor
+        transform = transforms.Compose(
+            [
+                # RandomHorizontalFlip(),
+                # RandomRotation(15),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225]),
+            ]
+        )
+
+        train_dataset = TripletDataset(data_path=self.data_path,
+                                       sequences=self.seq_train,
+                                       transform=transform)
+
+        test_dataset = TripletDataset(data_path=self.data_path,
+                                      sequences=self.seq_test,
+                                      transform=transform)
+
+        train_loader = DataLoader(train_dataset,
+                                  batch_size=8,
+                                  shuffle=True)
+
+        test_loader = DataLoader(test_dataset,
+                                 batch_size=8,
+                                 shuffle=False)
+
+        embedding_net = EmbeddingNet(backbone=backbone,
+                                     model_id=backbone + '_triplet')
+
+        model = TripletNet(embedding_net=embedding_net).cuda()
+
+        loss_fn = TripletLoss(margin=1.0)
+
+        lr = 1e-3
+        optimizer = optim.Adam(model.parameters(), lr=lr)
+        scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
+        n_epochs = 50
+        log_interval = 10
+
+        fit(train_loader=train_loader,
+            val_loader=test_loader,
+            model=model,
+            loss_fn=loss_fn,
+            optimizer=optimizer,
+            scheduler=scheduler,
+            n_epochs=n_epochs,
+            cuda=True,
+            log_interval=log_interval,
+            output_path=join('data', 'fasterrcnn', '-'.join(self.seq_train), 'models'),
+            model_id=backbone + '_triplet',
+            )
+
+
 if __name__== "__main__":
-    aic = AICity(data_path="../../data/AICity_data/train/",
+    aic = AICity(data_path=join(dirname(dirname(os.getcwd())), 'data', 'AICity_data', 'train'),
                  model_yaml="COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml",
                  epochs=5000,
                  batch_size=2,
@@ -385,7 +458,9 @@ if __name__== "__main__":
                  test_seq=["S03"],
                  )
 
-    aic.sc_tracking()
+
+
+    aic.reid_train()
 
 
 

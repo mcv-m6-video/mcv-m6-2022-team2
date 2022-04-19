@@ -1,6 +1,0 @@
-names:
-- car
-nc: 1
-test: data/yolo/S01-S04/test.txt
-train: data/yolo/S01-S04/train.txt
-val: data/yolo/S01-S04/val.txt

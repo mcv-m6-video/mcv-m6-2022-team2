@@ -10,12 +10,12 @@ from os.path import join
 from image_utils import filter_roi
 
 DATA_ROOT = '../../../data/AICity_data/train'
-SEQ = 'S03'
-CAM = 'c014'
+SEQ = 'S01'
+CAM = 'c002'
 
 #labels = load_annot(join(DATA_ROOT, SEQ, CAM, 'gt'), 'gt.txt')
 
-labels = load_annot(join('..', 'data', 'fasterrcnn', 'S01-S04', 'sc_tracking'), 'c014.txt')
+labels = load_annot(join('..', 'data', 'fasterrcnn', 'S03-S04', 'sc_tracking'), 'c002.txt')
 video = cv2.VideoCapture(join(DATA_ROOT, SEQ, CAM, 'vdo.avi'))
 
 cv2.namedWindow("frame", cv2.WINDOW_NORMAL)        # Create window with freedom of dimensions

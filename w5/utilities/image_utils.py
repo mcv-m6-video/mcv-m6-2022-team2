@@ -40,7 +40,7 @@ def video_to_frames(video_path):
             raise IOError("Could not open video")
 
         # Create the tqdm progress bar object
-        frame_num = 1
+        frame_num = 0
         pbar = tqdm(desc=f"Reading and saving frames from {camera_path}")
 
         while True:
