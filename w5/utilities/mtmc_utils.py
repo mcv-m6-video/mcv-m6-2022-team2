@@ -448,7 +448,7 @@ class Matcher():
     """
     Matcher class. This class is used to match the car embedding of different cameras.
     """
-    def __init__(self, data_path, sequence, samples, percentile, model, model_id, transform):
+    def __init__(self, data_path, sequence, samples, percentile, model, model_id, type, transform):
 
         self.data_path = data_path
 
@@ -466,6 +466,8 @@ class Matcher():
         self.train_sequences = ["S01", "S03", "S04"]
         self.train_sequences.remove(self.sequence)
 
+        self.type = type
+
         json_path = join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'dataset', f'embeddings_{model_id}.json')
         if exists(json_path):
             print(f"Loading the embeddings of {model_id}...")
@@ -475,9 +477,9 @@ class Matcher():
         else:
             self.cam_data = {}
 
-            for cam in tqdm(sorted(os.listdir(join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'sc_tracking'))),
+            for cam in tqdm(sorted(os.listdir(join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'mtsc_' + self.type))),
                             desc="Creating the embeddings"):
-                tracking_pred = load_annot(join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'sc_tracking'), cam)
+                tracking_pred = load_annot(join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'mtsc_' + self.type), cam)
                 self.cam_data[cam.split('.')[0]] = {}
                 for frame_num, frame_annotations in tracking_pred.items():
                     frame_path = join(data_path, self.sequence, cam.split('.')[0], 'frames', frame_num + '.jpg')
@@ -639,7 +641,7 @@ class Matcher():
             accumulative_emb = accumulative_emb + embeddings2
             accumulative_labels = accumulative_labels + self.seq_embeddings[cam_names[i]]['labels']
 
-        os.makedirs(join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'mtmc_tracking'), exist_ok=True)
+        os.makedirs(join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'mtmc_' + self.type), exist_ok=True)
 
         for cam_name, annotations in self.cam_data.items():
             cam_annot = []
@@ -654,7 +656,7 @@ class Matcher():
                                      a['bbox'][3]-a['bbox'][1],
                                      1])
 
-            write_predictions(join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'mtmc_tracking', cam_name + '.txt'), cam_annot)
+            write_predictions(join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'mtmc_' + self.type, cam_name + '.txt'), cam_annot)
 
     def eval_mtmc(self):
         """
@@ -662,10 +664,10 @@ class Matcher():
         :return:
         """
         accumulator = mm.MOTAccumulator(auto_id=True)
-        for cam in sorted(os.listdir(join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'mtmc_tracking'))):
+        for cam in sorted(os.listdir(join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'mtmc_' + self.type))):
 
             ground_truth = load_annot(join(self.data_path, self.sequence, cam.split('.')[0], 'gt'), 'gt.txt')
-            predictions = load_annot(join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'mtmc_tracking'), cam)
+            predictions = load_annot(join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'mtmc_' + self.type), cam)
 
             for img_path in sorted(glob(join(self.data_path, self.sequence, cam.split('.')[0], 'frames', '*.jpg'))):
                 frame_num = img_path.split('/')[-1].split('.')[0]
@@ -740,7 +742,7 @@ class Matcher():
                 PathEffects.Normal()])
 
         plt.legend(loc='best')
-        plt.title('2D representation of the image features')
+        plt.title(f'2D UMAP representation of {num_ids} cars of sequence {self.sequence}')
 
         os.makedirs(join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'figures'), exist_ok=True)
         plt.savefig(fname=join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'figures', 'umap.png'))

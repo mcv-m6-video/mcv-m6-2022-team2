@@ -7,7 +7,8 @@ if __name__== "__main__":
                  batch_size=2,
                  train_val_split=0.2,
                  train_seq=["S01", "S04"],
-                 test_seq=["S03"])
+                 test_seq=["S03"],
+                 tracking='sort')
 
     # aic.train_reid(backbone='resnet50', backbone_epochs=5, triplet_epochs=25, batch_size=16, lr=0.001, finetune=True)
 

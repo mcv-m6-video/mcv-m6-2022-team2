@@ -49,6 +49,7 @@ class AICity:
         train_val_split=0.2,
         train_seq=["S01", "S04"],
         test_seq=["S03"],
+        tracking='sort',
     ):
         """
         Initialize the AICity class
@@ -126,6 +127,8 @@ class AICity:
         self.cfg.MODEL.DEVICE = "cuda"
         self.cfg.OUTPUT_DIR = 'output'
         os.makedirs(self.cfg.OUTPUT_DIR, exist_ok=True)
+
+        self.tracking = tracking
 
     def train_val_split(self, split=0.2):
         """
@@ -346,7 +349,7 @@ class AICity:
         """
 
         # Create folder to store the tracking results
-        os.makedirs(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'sc_tracking'), exist_ok=True)
+        os.makedirs(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'mtsc_' + self.tracking), exist_ok=True)
 
         raw_predictions = []
         roi_predictions = []
@@ -362,7 +365,8 @@ class AICity:
             # RAW TRACKING
             _, idf1 = tracking(img_paths=sorted(glob(join(self.data_path, self.seq_test[0], cam_txt.split('.')[0], 'frames', '*.jpg'))),
                                ground_truth=ground_truth,
-                               predictions=predictions)
+                               predictions=predictions,
+                               type=self.tracking)
 
             raw_predictions.append(idf1)
 
@@ -370,6 +374,7 @@ class AICity:
             predictions, idf1 = tracking(img_paths=sorted(glob(join(self.data_path, self.seq_test[0], cam_txt.split('.')[0], 'frames', '*.jpg'))),
                                ground_truth=ground_truth,
                                predictions=predictions,
+                               type=self.tracking,
                                roi=self.masks[cam_txt.split('.')[0]],
                                roi_th=100)
 
@@ -386,10 +391,11 @@ class AICity:
 
             predictions, idf1 = tracking(img_paths=sorted(glob(join(self.data_path, self.seq_test[0], cam_txt.split('.')[0], 'frames', '*.jpg'))),
                                          ground_truth=ground_truth,
-                                         predictions=predictions)
+                                         predictions=predictions,
+                                         type=self.tracking)
 
             # Write the tracking results
-            write_predictions(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'sc_tracking', f"{cam_txt.split('.')[0]}.txt"), predictions)
+            write_predictions(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'mtsc_' + self.tracking, f"{cam_txt.split('.')[0]}.txt"), predictions)
             parked_predictions.append(idf1)
 
         print('TRACKING RESULTS:')
@@ -432,9 +438,6 @@ class AICity:
             if exists(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'models', model_id + '.pth')):
                 print('The model has already been trained...')
                 print('If you want to train it again, delete the previous model ;)')
-
-                train_dataset = ExtractionDataset(data_path=self.data_path,
-                                                  sequences=self.seq_train)
 
                 # Load the already trained backbone and change the last layer to have an output of 2048
                 model = models.resnet50(pretrained=True)
@@ -577,9 +580,10 @@ class AICity:
                           percentile=70,
                           model=model,
                           model_id=model_name,
+                          type=self.tracking,
                           transform=self.transform)
 
-        if exists(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'mtmc_tracking')):
+        if exists(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'mtmc_' + self.tracking)):
             matcher.eval_mtmc()
         else:
             matcher.match_all(distance_th=1.3,
