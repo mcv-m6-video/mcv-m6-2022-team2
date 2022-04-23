@@ -10,12 +10,12 @@ from os.path import join
 from image_utils import filter_roi
 
 DATA_ROOT = '../../../data/AICity_data/train'
-SEQ = 'S01'
-CAM = 'c002'
+SEQ = 'S03'
+CAM = 'c011'
 
 #labels = load_annot(join(DATA_ROOT, SEQ, CAM, 'gt'), 'gt.txt')
 
-labels = load_annot(join('..', 'data', 'fasterrcnn', 'S03-S04', 'sc_tracking'), 'c002.txt')
+labels = load_annot(join('..', 'data', 'fasterrcnn', 'S01-S04', 'predictions'), 'c011.txt')
 video = cv2.VideoCapture(join(DATA_ROOT, SEQ, CAM, 'vdo.avi'))
 
 cv2.namedWindow("frame", cv2.WINDOW_NORMAL)        # Create window with freedom of dimensions
@@ -37,7 +37,6 @@ while True:
             obj_ids = [annotation['obj_id'] for annotation in annotations]
             detections = [[box[0], box[1], box[2], box[3], obj_id] for box, obj_id in zip(bboxes, obj_ids)]
             detections = filter_roi(detections, roi, th=100)
-            #annotations = [[annot[0], annot[1], annot[2]-annot[0], annot[3]-annot[1]] for annot in annotations]
             plotBBoxes(frame, saveFrames=None, annotations=detections)
 
         cv2.imshow('frame', frame)

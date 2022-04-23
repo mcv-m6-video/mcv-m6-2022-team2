@@ -8,7 +8,7 @@ import numpy as np
 from tqdm import tqdm
 from os.path import dirname, join, exists
 
-from sort.sort import Sort
+# from sort.sort import Sort
 
 def video_to_frames(video_path):
     """
@@ -266,6 +266,7 @@ def plotBBoxes(img, saveFrames=None, **bboxes):
                               (int(bbox[0] + 60), int(bbox[1] + 30)),
                               COLORS[int(bbox[4] % len(COLORS))],
                               -1)
+
                 cv2.putText(img,
                             str(int(bbox[4])),
                             (int(bbox[0]), int(bbox[1] + 25)),
@@ -289,3 +290,5 @@ def plotBBoxes(img, saveFrames=None, **bboxes):
 
 if __name__ == "__main__":
     all_videos_to_frames("../../../data/AICity_data/train")
+
+
