@@ -468,7 +468,7 @@ class Matcher():
 
         self.type = type
 
-        json_path = join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'dataset', f'embeddings_{model_id}.json')
+        json_path = join('data', 'fasterrcnn', '-'.join(self.train_sequences), 'dataset', f'{self.type}_embeddings_{model_id}.json')
         if exists(json_path):
             print(f"Loading the embeddings of {model_id}...")
             print(f'If you want to create new embeddings for that model, delete {json_path}')

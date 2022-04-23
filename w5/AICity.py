@@ -566,8 +566,6 @@ class AICity:
 
         if not 'triplet' in model_name:
             model.load_state_dict(torch.load(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'models', model_name + '.pth')))
-            model = EmbeddingNet(model=model)
-            model = TripletNet(embedding_net=model)
 
         else:
             model = EmbeddingNet(model=model)

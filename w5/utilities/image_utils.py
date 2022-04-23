@@ -8,7 +8,7 @@ import numpy as np
 from tqdm import tqdm
 from os.path import dirname, join, exists
 
-# from sort.sort import Sort
+#from sort.sort import Sort
 
 def video_to_frames(video_path):
     """
@@ -101,6 +101,30 @@ def filter_roi(bboxes, roi_dist, th=50):
             filtered_bboxes.append(bbox)
     return filtered_bboxes
 
+def iou_list(bboxes1, bbox2):
+    """
+    Computes IoU between a list of bounding boxes and a single bounding box.
+    :param bboxes1: list of bounding boxes [xmin, ymin, xmax, ymax]
+    :param bbox2: 1 bounding box [xmin, ymin, xmax, ymax]
+    :return: list of IoU (size num)
+    """
+
+    # intersection
+    xA = np.maximum(bboxes1[:, 0], bbox2[0])
+    yA = np.maximum(bboxes1[:, 1], bbox2[1])
+    xB = np.minimum(bboxes1[:, 2], bbox2[2])
+    yB = np.minimum(bboxes1[:, 3], bbox2[3])
+    iw = np.maximum(xB - xA + 1., 0.)
+    ih = np.maximum(yB - yA + 1., 0.)
+    inters = iw * ih
+
+    # union
+    uni = ((bbox2[2] - bbox2[0] + 1.) * (bbox2[3] - bbox2[1] + 1.) +
+           (bboxes1[:, 2] - bboxes1[:, 0] + 1.) *
+           (bboxes1[:, 3] - bboxes1[:, 1] + 1.) - inters)
+
+    return inters / uni
+
 def tracking(img_paths, ground_truth, predictions, type='sort', roi=None, roi_th=50):
     """
     Compute the tracking and its evaluation given a list of predictions and ground truths.
@@ -121,7 +145,7 @@ def tracking(img_paths, ground_truth, predictions, type='sort', roi=None, roi_th
         # Create the tracker
         tracker = Sort()
 
-        tracking_predicitons = []
+        tracking_predictions = []
         # Iterate through the frames
         for img_path in tqdm(img_paths, desc=f"Tracking {img_paths[0].split('/')[-3]}"):
 
@@ -159,7 +183,7 @@ def tracking(img_paths, ground_truth, predictions, type='sort', roi=None, roi_th
             for t in trackers:
                 det_centers.append((int(t[0] + t[2] / 2), int(t[1] + t[3] / 2)))
                 det_ids.append(int(t[4]))
-                tracking_predicitons.append(
+                tracking_predictions.append(
                     [frame_num, int(t[4]), int(t[0]), int(t[1]), int(t[2] - t[0]), int(t[3] - t[1]), 1])
 
             accumulator.update(
@@ -174,7 +198,124 @@ def tracking(img_paths, ground_truth, predictions, type='sort', roi=None, roi_th
         summary = mh.compute(accumulator, metrics=['precision', 'recall', 'idp', 'idr', 'idf1'], name='acc')
         print(summary)
 
-    return tracking_predicitons, summary['idf1']['acc']
+    elif type == 'max_overlap':
+        # Create the accumulator that will be updated during each frame
+        accumulator = mm.MOTAccumulator(auto_id=True)
+
+        tracking_predictions = []
+        new_track = 1
+        initialize = True
+
+        for img_path in tqdm(img_paths, desc=f"Tracking {img_paths[0].split('/')[-3]}"):
+            frame_num = img_path.split('/')[-1].split('.')[0]
+
+            # Obtain the Ground Truth and predictions for the current frame
+            # Using the function get() to avoid crashing when there is no key with that string
+            gt_annotations = ground_truth.get(frame_num, [])
+            pred_annotations = predictions.get(frame_num, [])
+
+            # Obtain the Ground Truth centers and ids
+            gt_centers = [(a['bbox'][0] + a['bbox'][2] / 2, a['bbox'][1] + a['bbox'][3] / 2) for a in gt_annotations]
+            gt_ids = [a['obj_id'] for a in gt_annotations]
+
+            pred_centers = []
+            pred_ids = []
+            current_bboxes = []
+
+            frame_pred_bboxes = [a['bbox'] for a in pred_annotations]
+
+            # If roi is not None, filter predictions
+            if roi is not None:
+                frame_pred_bboxes = filter_roi(bboxes=frame_pred_bboxes, roi_dist=roi, th=roi_th)
+
+            if initialize:
+                for box in frame_pred_bboxes:
+                    pred_ids.append(new_track)
+                    pred_centers.append((int(box[0] + box[2] / 2),
+                                         int(box[3] + box[1] / 2)))
+                    current_bboxes.append([box[0],
+                                           box[1],
+                                           box[2],
+                                           box[3]])
+
+                    tracking_predictions.append([frame_num,
+                                                 new_track,
+                                                 int(box[0]),
+                                                 int(box[1]),
+                                                 int(box[2] - box[0]),
+                                                 int(box[3] - box[1]),
+                                                 1])
+                    new_track += 1
+                    initialize = False
+            else:
+                past_bboxes_np = np.zeros((len(past_bboxes), 4))
+                for idx, past_box in enumerate(past_bboxes):
+                    past_bboxes_np[idx, :] = [past_box[0],
+                                              past_box[1],
+                                              past_box[2],
+                                              past_box[3]]
+
+                # Compare each current prediction with the past detections
+                for box in frame_pred_bboxes:
+                    current_bbox = [box[0],
+                                    box[1],
+                                    box[2],
+                                    box[3]]
+
+                    ious = np.nan_to_num(iou_list(past_bboxes_np, current_bbox))
+
+                    # If the current prediction overlaps with any of the past detections
+                    if np.all(ious==np.nan):
+                        id = new_track
+                        new_track += 1
+
+                    # If the biggest overlap is greater than a threshold
+                    elif np.nanmax(ious) > 0.3:
+                        # Asign the current bbox to the same track as the overlaping bbox from the previous frame
+                        id = past_ids[np.nanargmax(ious)]
+                        # Disable the assigned bbox from the list, to not be assigned again
+                        past_bboxes_np[np.nanargmax(ious)] = [np.nan, np.nan, np.nan, np.nan]
+
+                    # If there is no overlap
+                    else:
+                        id = new_track
+                        new_track += 1
+
+                    pred_ids.append(id)
+
+                    pred_centers.append((int(box[0] + box[2] / 2),
+                                         int(box[3] + box[1] / 2)))
+
+                    current_bboxes.append([box[0],
+                                           box[1],
+                                           box[2],
+                                           box[3]])
+
+                    tracking_predictions.append([frame_num,
+                                                 id,
+                                                 int(box[0]),
+                                                 int(box[1]),
+                                                 int(box[2] - box[0]),
+                                                 int(box[3] - box[1]),
+                                                 1])
+
+            # Save the current frame predictions as past frame
+            past_ids = pred_ids
+            past_bboxes = current_bboxes
+
+            accumulator.update(
+                gt_ids,  # Ground truth objects in this frame
+                pred_ids,  # Detector hypotheses in this frame
+                mm.distances.norm2squared_matrix(gt_centers, pred_centers)
+                # Distances from object 1 to hypotheses 1, 2, 3 and Distances from object 2 to hypotheses 1, 2, 3
+            )
+
+        # Compute the metrics
+        mh = mm.metrics.create()
+        summary = mh.compute(accumulator, metrics=['precision', 'recall', 'idp', 'idr', 'idf1'], name='acc')
+        print(summary)
+
+    return tracking_predictions, summary['idf1']['acc']
 
 def filter_parked_cars(annotations, img_paths, var_th=25):
     """
