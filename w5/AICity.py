@@ -62,10 +62,6 @@ class AICity:
         """
 
         self.data_path = data_path
-        self.model = model_yaml
-
-        self.epochs = epochs
-        self.batch_size = batch_size
 
         self.seq_train = train_seq
         self.seq_test = test_seq
@@ -81,14 +77,6 @@ class AICity:
             ]
         )
 
-        self.masks = {}
-        print("Loading masks...")
-        for seq in train_seq + test_seq:
-            for cam in sorted(os.listdir(join(self.data_path, seq))):
-                roi = cv2.imread(join(self.data_path, seq, cam, "roi.jpg"), cv2.IMREAD_GRAYSCALE)/255
-                # Compute the distance to the roi for each pixel
-                self.masks[cam] = ndimage.distance_transform_edt(roi)
-
         # Create the train/val split
         self.train_val_split(split=train_val_split)
 
@@ -100,33 +88,6 @@ class AICity:
         os.makedirs('data', exist_ok=True)
         os.makedirs(join('data', 'fasterrcnn'), exist_ok=True)
         os.makedirs(join('data', 'fasterrcnn', '-'.join(self.seq_train)), exist_ok=True)
-
-        # --- DETECTRON CONFIGURATIONS ---
-        # 1. Model configuration
-        self.cfg = get_cfg()
-        self.cfg.merge_from_file(model_zoo.get_config_file(self.model))  # model
-        self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(self.model)  # Model
-        self.cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1  # car
-
-        # Raw model name
-        self.model_name = self.model.replace('.yaml', '').split('/')[-1]  # Model name without .yml and COCO-Detection
-
-        # 2. Dataset configuration
-        self.cfg.DATASETS.TRAIN = ("AICity_train",)
-        self.cfg.DATASETS.TEST = ("AICity_test",)
-
-        # 3. Hyper-params configuration
-        self.cfg.DATALOADER.NUM_WORKERS = 2
-        self.cfg.SOLVER.IMS_PER_BATCH = self.batch_size
-        self.cfg.MODEL.BACKBONE.FREEZE_AT = 2
-        self.cfg.TEST.EVAL_PERIOD = 0
-        self.cfg.SOLVER.BASE_LR = 0.001  # learning rate
-        self.cfg.SOLVER.MAX_ITER = self.epochs
-        self.cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 512  # batch size per image
-        self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
-        self.cfg.MODEL.DEVICE = "cuda"
-        self.cfg.OUTPUT_DIR = 'output'
-        os.makedirs(self.cfg.OUTPUT_DIR, exist_ok=True)
 
         self.tracking = tracking
 
@@ -249,7 +210,7 @@ class AICity:
 
         return dataset_dicts
 
-    def train_detectron2(self):
+    def train_detectron2(self, model_yaml, epochs, batch_size, resume=True):
         """
         Train the model using Detectron2
         :return:
@@ -257,7 +218,38 @@ class AICity:
 
         # --- PREPARE THE ENVIRONMENT ---
 
-        # 1. Register the dataset splits
+        self.detection_model = model_yaml
+        self.detection_epochs = epochs
+        self.detection_batch_size = batch_size
+
+        # --- DETECTRON CONFIGURATIONS ---
+        # 1. Model configuration
+        self.cfg = get_cfg()
+        self.cfg.merge_from_file(model_zoo.get_config_file(self.detection_model))  # model
+        self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(self.detection_model)  # Model
+        self.cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1  # car
+
+        # Raw model name
+        self.model_name = self.detection_model.replace('.yaml', '').split('/')[-1]  # Model name without .yml and COCO-Detection
+
+        # 2. Dataset configuration
+        self.cfg.DATASETS.TRAIN = ("AICity_train",)
+        self.cfg.DATASETS.TEST = ("AICity_test",)
+
+        # 3. Hyper-params configuration
+        self.cfg.DATALOADER.NUM_WORKERS = 2
+        self.cfg.SOLVER.IMS_PER_BATCH = self.detection_batch_size
+        self.cfg.MODEL.BACKBONE.FREEZE_AT = 2
+        self.cfg.TEST.EVAL_PERIOD = 0
+        self.cfg.SOLVER.BASE_LR = 0.001  # learning rate
+        self.cfg.SOLVER.MAX_ITER = self.detection_epochs
+        self.cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 512  # batch size per image
+        self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
+        self.cfg.MODEL.DEVICE = "cuda"
+        self.cfg.OUTPUT_DIR = 'output'
+        os.makedirs(self.cfg.OUTPUT_DIR, exist_ok=True)
+
+        # 4. Register the dataset splits
         for mode in ['train', 'val', 'test']:
             DatasetCatalog.register("AICity_" + mode, lambda mode=mode: self.register_dataset(mode=mode))
             MetadataCatalog.get('AICity_' + mode).set(thing_classes=['car'])
@@ -269,7 +261,7 @@ class AICity:
 
         # 2. Train the model
         trainer = DefaultTrainer(self.cfg)           # Create object
-        trainer.resume_or_load(resume=True)     # If the model has been already trained, load it
+        trainer.resume_or_load(resume=resume)     # If the model has been already trained, load it
         trainer.train()                         # Train
 
         # 3. Save the Model
@@ -351,9 +343,18 @@ class AICity:
         # Create folder to store the tracking results
         os.makedirs(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'mtsc_' + self.tracking), exist_ok=True)
 
+        self.masks = {}
+        print("Loading masks...")
+        for seq in self.seq_train + self.seq_test:
+            for cam in sorted(os.listdir(join(self.data_path, seq))):
+                roi = cv2.imread(join(self.data_path, seq, cam, "roi.jpg"), cv2.IMREAD_GRAYSCALE) / 255
+                # Compute the distance to the roi for each pixel
+                self.masks[cam] = ndimage.distance_transform_edt(roi)
+
         raw_predictions = []
         roi_predictions = []
         parked_predictions = []
+        id_raw, id_roi, id_parked = 1, 1, 1
 
         # Iterate through the txt camera files to perform the tracking
         for cam_txt in sorted(os.listdir(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'predictions'))):
@@ -362,22 +363,27 @@ class AICity:
             predictions = load_annot(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'predictions'), cam_txt)
             ground_truth = load_annot(join(self.data_path, self.seq_test[0], cam_txt.split('.')[0], 'gt'), 'gt.txt')
 
+
             # RAW TRACKING
-            _, idf1 = tracking(img_paths=sorted(glob(join(self.data_path, self.seq_test[0], cam_txt.split('.')[0], 'frames', '*.jpg'))),
+            _, idf1, ending_id = tracking(img_paths=sorted(glob(join(self.data_path, self.seq_test[0], cam_txt.split('.')[0], 'frames', '*.jpg'))),
                                ground_truth=ground_truth,
                                predictions=predictions,
-                               type=self.tracking)
+                               type=self.tracking,
+                               starting_id=id_raw)
 
+            id_raw = ending_id
             raw_predictions.append(idf1)
 
             # FILTER ROI DETECTIONS
-            predictions, idf1 = tracking(img_paths=sorted(glob(join(self.data_path, self.seq_test[0], cam_txt.split('.')[0], 'frames', '*.jpg'))),
+            predictions, idf1, ending_id = tracking(img_paths=sorted(glob(join(self.data_path, self.seq_test[0], cam_txt.split('.')[0], 'frames', '*.jpg'))),
                                ground_truth=ground_truth,
                                predictions=predictions,
                                type=self.tracking,
                                roi=self.masks[cam_txt.split('.')[0]],
-                               roi_th=100)
+                               roi_th=100,
+                               starting_id=id_roi)
 
+            id_roi = ending_id
             roi_predictions.append(idf1)
 
             # FILTER PARKED CARS
@@ -389,10 +395,13 @@ class AICity:
 
             predictions = list_to_dict(predictions)
 
-            predictions, idf1 = tracking(img_paths=sorted(glob(join(self.data_path, self.seq_test[0], cam_txt.split('.')[0], 'frames', '*.jpg'))),
+            predictions, idf1, ending_id = tracking(img_paths=sorted(glob(join(self.data_path, self.seq_test[0], cam_txt.split('.')[0], 'frames', '*.jpg'))),
                                          ground_truth=ground_truth,
                                          predictions=predictions,
-                                         type=self.tracking)
+                                         type=self.tracking,
+                                         starting_id=id_parked)
+
+            id_parked = ending_id
 
             # Write the tracking results
             write_predictions(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'mtsc_' + self.tracking, f"{cam_txt.split('.')[0]}.txt"), predictions)
@@ -581,11 +590,9 @@ class AICity:
                           type=self.tracking,
                           transform=self.transform)
 
-        if exists(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'mtmc_' + self.tracking)):
-            matcher.eval_mtmc()
-        else:
-            matcher.match_all(distance_th=1.3,
-                              n_neighbors=3)
-            matcher.eval_mtmc()
+
+        matcher.match_all(distance_th=1.3,
+                          n_neighbors=3)
+        matcher.eval_mtmc()
 
         matcher.draw_umap(num_ids=10)

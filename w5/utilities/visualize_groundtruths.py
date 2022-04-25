@@ -15,7 +15,7 @@ CAM = 'c010'
 
 #labels = load_annot(join(DATA_ROOT, SEQ, CAM, 'gt'), 'gt.txt')
 
-labels = load_annot(join('..', 'data', 'fasterrcnn', 'S01-S04', 'mtsc_max_overlap'), 'c010.txt')
+labels = load_annot(join('..', 'data', 'fasterrcnn', 'S01-S04', 'mtmc_max_overlap'), 'c010.txt')
 video = cv2.VideoCapture(join(DATA_ROOT, SEQ, CAM, 'vdo.avi'))
 
 cv2.namedWindow("frame", cv2.WINDOW_NORMAL)        # Create window with freedom of dimensions

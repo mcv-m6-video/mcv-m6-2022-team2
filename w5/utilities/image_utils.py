@@ -125,7 +125,7 @@ def iou_list(bboxes1, bbox2):
 
     return inters / uni
 
-def tracking(img_paths, ground_truth, predictions, type='sort', roi=None, roi_th=50):
+def tracking(img_paths, ground_truth, predictions, type='sort', roi=None, roi_th=50, starting_id=1):
     """
     Compute the tracking and its evaluation given a list of predictions and ground truths.
     This function is able to do the tracking with and without filtering the detections by a mask.
@@ -142,6 +142,7 @@ def tracking(img_paths, ground_truth, predictions, type='sort', roi=None, roi_th
         # Create the accumulator that will be updated during each frame
         accumulator = mm.MOTAccumulator(auto_id=True)
 
+        starting_id = None
         # Create the tracker
         tracker = Sort()
 
@@ -203,7 +204,6 @@ def tracking(img_paths, ground_truth, predictions, type='sort', roi=None, roi_th
         accumulator = mm.MOTAccumulator(auto_id=True)
 
         tracking_predictions = []
-        new_track = 1
         initialize = True
 
         for img_path in tqdm(img_paths, desc=f"Tracking {img_paths[0].split('/')[-3]}"):
@@ -230,7 +230,7 @@ def tracking(img_paths, ground_truth, predictions, type='sort', roi=None, roi_th
 
             if initialize:
                 for box in frame_pred_bboxes:
-                    pred_ids.append(new_track)
+                    pred_ids.append(starting_id)
                     pred_centers.append((int(box[0] + box[2] / 2),
                                          int(box[3] + box[1] / 2)))
                     current_bboxes.append([box[0],
@@ -239,13 +239,13 @@ def tracking(img_paths, ground_truth, predictions, type='sort', roi=None, roi_th
                                            box[3]])
 
                     tracking_predictions.append([frame_num,
-                                                 new_track,
+                                                 starting_id,
                                                  int(box[0]),
                                                  int(box[1]),
                                                  int(box[2] - box[0]),
                                                  int(box[3] - box[1]),
                                                  1])
-                    new_track += 1
+                    starting_id += 1
                     initialize = False
             else:
                 past_bboxes_np = np.zeros((len(past_bboxes), 4))
@@ -266,8 +266,8 @@ def tracking(img_paths, ground_truth, predictions, type='sort', roi=None, roi_th
 
                     # If the current prediction overlaps with any of the past detections
                     if np.all(ious==np.nan):
-                        id = new_track
-                        new_track += 1
+                        id = starting_id
+                        starting_id += 1
 
                     # If the biggest overlap is greater than a threshold
                     elif np.nanmax(ious) > 0.3:
@@ -278,8 +278,8 @@ def tracking(img_paths, ground_truth, predictions, type='sort', roi=None, roi_th
 
                     # If there is no overlap
                     else:
-                        id = new_track
-                        new_track += 1
+                        id = starting_id
+                        starting_id += 1
 
                     pred_ids.append(id)
 
@@ -315,7 +315,7 @@ def tracking(img_paths, ground_truth, predictions, type='sort', roi=None, roi_th
         summary = mh.compute(accumulator, metrics=['precision', 'recall', 'idp', 'idr', 'idf1'], name='acc')
         print(summary)
 
-    return tracking_predictions, summary['idf1']['acc']
+    return tracking_predictions, summary['idf1']['acc'], starting_id
 
 def filter_parked_cars(annotations, img_paths, var_th=25):
     """
@@ -358,7 +358,7 @@ def filter_parked_cars(annotations, img_paths, var_th=25):
 
     return filtered_detections
 
-def plotBBoxes(img, saveFrames=None, **bboxes):
+def plotBBoxes(img, frame=None, cam=None, saveFrames=None, **bboxes):
     """
     Plots a set of bounding boxes on an image.
     parameters:
@@ -415,6 +415,7 @@ def plotBBoxes(img, saveFrames=None, **bboxes):
                             1,
                             LETTERS[int(bbox[4] % len(LETTERS))],
                             2)
+
             else:
                 cv2.rectangle(
                     img,
@@ -423,6 +424,41 @@ def plotBBoxes(img, saveFrames=None, **bboxes):
                     COLORS[idx],
                     2,
                 )
+
+        if frame is not None:
+            cv2.rectangle(
+                img,
+                (0,0),
+                (120, 70),
+                (0,0,0),
+                -1,
+            )
+            cv2.rectangle(
+                img,
+                (4, 4),
+                (116, 66),
+                (255, 255, 255),
+                -1,
+            )
+
+            cv2.putText(img,
+                        str(frame),
+                        (10, 65),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1.25,
+                        (0, 0, 0),
+                        3)
+
+
+
+        if cam is not None:
+            cv2.putText(img,
+                        str(cam),
+                        (10, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1.25,
+                        (0, 0, 0),
+                        3)
 
     if saveFrames is not None:
         cv2.imwrite(saveFrames, img)

@@ -519,8 +519,10 @@ class Matcher():
                             img = Image.open(annot['path']).crop(annot['bbox']).resize((224, 224))
                             img = self.transform(img)
 
-                            emb = self.model(img.unsqueeze(0).cuda()).detach().cpu().numpy().tolist()[0]
-
+                            if not 'triplet' in model_id:
+                                emb = self.model(img.unsqueeze(0).cuda()).detach().cpu().numpy().tolist()[0]
+                            else:
+                                emb =self.model.get_embedding(img.unsqueeze(0).cuda()).detach().cpu().numpy().tolist()
                             self.seq_embeddings[cam_name]['embeddings'].append(emb)
                             self.seq_embeddings[cam_name]['labels'].append(annot['id'])
 
@@ -532,7 +534,10 @@ class Matcher():
                             img = Image.open(annot['path']).crop(annot['bbox']).resize((224, 224))
                             img = self.transform(img)
 
-                            emb = self.model(img.unsqueeze(0).cuda()).detach().cpu().numpy().tolist()[0]
+                            if not 'triplet' in model_id:
+                                emb = self.model(img.unsqueeze(0).cuda()).detach().cpu().numpy().tolist()[0]
+                            else:
+                                emb = self.model.get_embedding(img.unsqueeze(0).cuda()).detach().cpu().numpy().tolist()
 
                             self.seq_embeddings[cam_name]['embeddings'].append(emb)
                             self.seq_embeddings[cam_name]['labels'].append(annot['id'])
