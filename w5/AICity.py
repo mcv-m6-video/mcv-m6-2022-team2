@@ -355,7 +355,8 @@ class AICity:
         roi_predictions = []
         parked_predictions = []
         id_raw, id_roi, id_parked = 1, 1, 1
-
+        if self.tracking == 'deep_sort':
+            id_raw = 0
         # Iterate through the txt camera files to perform the tracking
         for cam_txt in sorted(os.listdir(join('data', 'fasterrcnn', '-'.join(self.seq_train), 'predictions'))):
 

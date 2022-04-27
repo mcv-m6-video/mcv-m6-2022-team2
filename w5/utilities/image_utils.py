@@ -1,15 +1,14 @@
 import os
 import cv2
-import glob
-import random
 import motmetrics as mm
+import sys
 
 import numpy as np
 from tqdm import tqdm
 from os.path import dirname, join, exists
-
-#from sort.sort import Sort
-
+from sort.sort import Sort
+from ByteTrack.yolox.deepsort_tracker.deepsort import DeepSort
+from ByteTrack.yolox.deepsort_tracker.deepsort import DeepSort
 def video_to_frames(video_path):
     """
     Read and save a single video from the given path. The frames are saved in the same camera folder in a new folder
@@ -75,6 +74,7 @@ def all_videos_to_frames(data_root="../../data/AICity_data/train"):
     for video in video_paths:
         video_to_frames(video)
 
+
 def compute_bbox_centroid(bbox):
     """
     Compute the centroid of a bounding box.
@@ -101,6 +101,7 @@ def filter_roi(bboxes, roi_dist, th=50):
             filtered_bboxes.append(bbox)
     return filtered_bboxes
 
+
 def iou_list(bboxes1, bbox2):
     """
     Computes IoU between a list of bounding boxes and a single bounding box.
@@ -124,6 +125,7 @@ def iou_list(bboxes1, bbox2):
            (bboxes1[:, 3] - bboxes1[:, 1] + 1.) - inters)
 
     return inters / uni
+
 
 def tracking(img_paths, ground_truth, predictions, type='sort', roi=None, roi_th=50, starting_id=1):
     """
@@ -315,7 +317,71 @@ def tracking(img_paths, ground_truth, predictions, type='sort', roi=None, roi_th
         summary = mh.compute(accumulator, metrics=['precision', 'recall', 'idp', 'idr', 'idf1'], name='acc')
         print(summary)
 
+    elif type == 'deep_sort':
+        # Create the accumulator that will be updated during each frame
+        accumulator = mm.MOTAccumulator(auto_id=True)
+
+        # Create the tracker
+        tracker = DeepSort(model_path='ByteTrack/yolox/deepsort_tracker/checkpoints/ckpt.t7')
+
+        tracking_predictions = []
+        # Iterate through the frames
+        for img_path in tqdm(img_paths, desc=f"Tracking {img_paths[0].split('/')[-3]}"):
+
+            frame_num = img_path.split('/')[-1].split('.')[0]
+
+            # Obtain the Ground Truth and predictions for the current frame
+            # Using the function get() to avoid crashing when there is no key with that string
+            gt_annotations = ground_truth.get(frame_num, [])
+            pred_annotations = predictions.get(frame_num, [])
+
+            # Obtain the Ground Truth and predictions for the current frame
+            gt_bboxes = [anno['bbox'] for anno in gt_annotations]
+            pred_bboxes = [anno['bbox'] for anno in pred_annotations]
+            pred_scores = [anno['confidence'] for anno in pred_annotations]
+            pred_bboxes = [[box[0], box[1], box[2], box[3], score] for box, score in
+                           zip(pred_bboxes, pred_scores)]  # Convert to list
+
+            # If roi is not None, filter predictions
+            if roi is not None:
+                pred_bboxes = filter_roi(bboxes=pred_bboxes, roi_dist=roi, th=roi_th)
+
+            # Obtain the Ground Truth centers and track IDs
+            gt_centers = [(bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2) for bbox in gt_bboxes]
+            gt_ids = [anno['obj_id'] for anno in gt_annotations]
+
+            outputs = np.zeros((len(pred_bboxes), 5))
+            for i, item in enumerate(pred_bboxes):
+                outputs[i, :] = item
+
+            output_tracking = tracker.update(outputs, img_path)
+
+            det_centers = []
+            det_ids = []
+
+            for t in output_tracking:
+                det_centers.append((int(t[0] + t[2] / 2), int(t[1] + t[3] / 2)))
+                det_ids.append(int(t[4]))
+                aux = int(t[4]) + int(starting_id)
+                tracking_predictions.append(
+                    [frame_num, int(aux), int(t[0]), int(t[1]), int(t[2] - t[0]), int(t[3] - t[1]), 1])
+
+            accumulator.update(
+                gt_ids,  # Ground truth objects in this frame
+                det_ids,  # Detector hypotheses in this frame
+                mm.distances.norm2squared_matrix(gt_centers, det_centers)
+                # Distances from object 1 to hypotheses 1, 2, 3 and Distances from object 2 to hypotheses 1, 2, 3
+            )
+
+            # Compute the metrics
+        mh = mm.metrics.create()
+        summary = mh.compute(accumulator, metrics=['precision', 'recall', 'idp', 'idr', 'idf1'], name='acc')
+        print(summary)
+
+        starting_id = max(track[1] for track in tracking_predictions)
+
     return tracking_predictions, summary['idf1']['acc'], starting_id
+
 
 def filter_parked_cars(annotations, img_paths, var_th=25):
     """
@@ -357,6 +423,20 @@ def filter_parked_cars(annotations, img_paths, var_th=25):
                                             int(anno['bbox'][3] + anno['bbox'][1]), 1])
 
     return filtered_detections
+
+
+def _get_features(self, bbox_xywh, ori_img):
+    im_crops = []
+    for box in bbox_xywh:
+        x1,y1,x2,y2 = self._xywh_to_xyxy(box)
+        im = ori_img[y1:y2,x1:x2]
+        im_crops.append(im)
+    if im_crops:
+        features = self.extractor(im_crops)
+    else:
+        features = np.array([])
+    return
+
 
 def plotBBoxes(img, frame=None, cam=None, saveFrames=None, **bboxes):
     """
@@ -464,6 +544,7 @@ def plotBBoxes(img, frame=None, cam=None, saveFrames=None, **bboxes):
         cv2.imwrite(saveFrames, img)
 
     return img
+
 
 if __name__ == "__main__":
     all_videos_to_frames("../../../data/AICity_data/train")
