@@ -1,4 +1,4 @@
-# Week 3
+# Week 3 - Object Detection and Tracking
 The tasks corresponding to week 3 were devoted to explore both Object Detection and tracking algorithms in order to detect and identify vehicles in the *AI City dataset*.
 To implement the Object Detection algorithms we have used the Detectron2 library using and testing the performance of both Faster R-CNN and RetinaNet models with ResNet-101 and ResNeXt-101 as backbone, respectively. The models were tested using the weights of the COCO-dataset, fine-tuned with the first 25% of the video sequence and 4-fold cross-validation in the same sequence.
 Regarding the tracking, we have tested the Maximum Overlap method and the Kalman Filter using the IDF1 metric.
