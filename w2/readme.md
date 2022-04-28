@@ -1,4 +1,4 @@
-# Week 2
+# Week 2 - Background Estimation
 The tasks corresponding to week 2 presented the problem of background estimation from video sequences, by means of Gaussian modelling methods.
 This family of methods pose the problem as a statistical model, where each pixel of each frame is modelled as a Random Variable
 with additive Gaussian noise. The mean and variance of the noise is set according to the mean and std over a set of frames, 
