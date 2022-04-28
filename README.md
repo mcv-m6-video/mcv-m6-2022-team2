@@ -33,25 +33,25 @@ The model pipeline is the following:
 
 All the model justification and results are in the following slides: [SLIDES](https://docs.google.com/presentation/d/1hbSbUkJ5XG_9_Yyj9-YAxtO10loXa0TE8gJzPEHQc4k/edit?usp=sharing)
 
-### Car Detection
+## Car Detection
 
 The first step of the model is to run a finetuned Faster R-CNN with ResNext101 backbone to predict the position of the cars frame-by-frame with theit bounding boxes. We reach a top **Average Precision of 0.9852** on the c010 of S03.
 
-### Single-camera Tracking
+## Single-camera Tracking
 
 Once the cars are detected we tested several tracking algorithms (Max Overlap, SORT, Deep SORT) to track and relate the bounding boxes which are from the same car along the frames. The best performing technique was Deep SORT wtih an **average IDF1 of 0.7447** over all the sequences.
 
-### Multi-camera Tracking
+## Multi-camera Tracking
 
 Once all the cars have been assigned to a track along the same camaera, TrackNet relates them to be able to identify the same car in different cameras.
 
 To do so, the model uses a Triplet Network with ResNet50 as backbone to implement Deep Metric Learning computing features from every tracklet. Once each tracklet has an embedding the Re-ID model matches all the similar tracklets from different cameras ensuring a cross-match condition. **TrackNet is able to achieve and average IDF1 of 0.4733**.
 
-### Instalation
+## Instalation
 
 This code is implemented in Python3.6+, [Detectron2](https://github.com/facebookresearch/detectron2) and [Pytorch](https://pytorch.org/)
 
-### Run the System
+## Run the System
 
 If you want to reproduce our results, please dowload the datasets from [AI City Challenge 22](https://www.aicitychallenge.org/2022-data-and-evaluation/) and put them in a folder called *data* outside the repository folder:
 
