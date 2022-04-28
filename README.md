@@ -4,7 +4,7 @@ This project is devoted to explore Computer Vision video techniques to track car
 
 The dataset used is a subset of 3 sequences of the *AI City dataset*. This dataset offers 3.25 hours of videos showing road intersections and driving vehicles. 40 cameras were used in 10 different intersections. The dataset also offers the frame-by-frame bounding boxes of each vehicle, giving a total of 229,680 bounding boxes for 666 different vehicles.
 
-In addition to the main challenge in this repository there are several studies done such as background estimation and optical flow estimation and representation. The corresponding detailed expositions are inside the w1, w2, w3 and w4 folders. However, all the code corresponding to the main challenge is in the w5 folder.
+In addition to the main challenge, in this repository there are several studies done such as background estimation and optical flow estimation and representation. The corresponding detailed expositions are inside the w1, w2, w3 and w4 folders. However, all the code corresponding to the main challenge is in the w5 folder.
 
 [Week 1 - Database, Evaluation Metrics and Representation](/w1)
 
@@ -45,7 +45,7 @@ Once the cars are detected we tested several tracking algorithms (Max Overlap, S
 
 Once all the cars have been assigned to a track along the same camaera, TrackNet relates them to be able to identify the same car in different cameras.
 
-To do so, the model uses a Triplet Network with ResNet50 as backbone to implement Deep Metric Learning computing features from every tracklet. Once each tracklet has an embedding the Re-ID model matches all the similar tracklets from different cameras ensuring a cross-match condition.
+To do so, the model uses a Triplet Network with ResNet50 as backbone to implement Deep Metric Learning computing features from every tracklet. Once each tracklet has an embedding the Re-ID model matches all the similar tracklets from different cameras ensuring a cross-match condition. **TrackNet is able to achieve and average IDF1 of 0.4733**.
 
 ### Instalation
 
@@ -53,7 +53,7 @@ This code is implemented in Python3.6+, [Detectron2](https://github.com/facebook
 
 ### Run the System
 
-If you want to reproduce our results, please dowload the datasets from [AI City Challenge 22](https://www.aicitychallenge.org/2022-data-and-evaluation/) and put them in a folder called *data* outside the repository:
+If you want to reproduce our results, please dowload the datasets from [AI City Challenge 22](https://www.aicitychallenge.org/2022-data-and-evaluation/) and put them in a folder called *data* outside the repository folder:
 
 ```
 ├── data
@@ -73,9 +73,9 @@ If you want to reproduce our results, please dowload the datasets from [AI City 
       ├── utilities
 ```
 
-The user has the ability to select which training sequences (S01, S03...) want by switching the train_seq parameter of the the AICity object in the *w5/main.py* file. The pipeline creates a data folder inside *w5* in which all the predictions are stored divided in different folders depending on the training sequences. Furthermore, the user has the ability of running just some parts of the pipeline just by comenting the corresponding lines in the *w5/main.py* file.
+The user has the ability to select which training sequences (S01, S03...) want by switching the *train_seq* parameter of the the *AICity* object in the *w5/main.py* file. The pipeline creates a data folder inside *w5* in which all the predictions are stored divided in different folders depending on the training sequences. Furthermore, the user has the ability of running just some parts of the pipeline just by comenting the corresponding lines of the *w5/main.py* file.
 
-So to run the TrackNet run:
+So to run *TrackNet* run:
 ```
 $ python w5/main.py
 ```
