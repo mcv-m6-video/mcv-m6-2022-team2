@@ -1,4 +1,4 @@
-# TrackNet: End-to-End Model for Video Surveillance for Road Traffic Monitoring
+# TrackNet: End-to-End Model for Road Traffic Monitoring
 
 This project is devoted to explore Computer Vision video techniques to track cars across multiple cameras at a single intersection and multiple intersections spreading out in a mid-size city.
 
