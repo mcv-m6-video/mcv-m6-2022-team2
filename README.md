@@ -55,6 +55,7 @@ This code is implemented in Python3.6+, [Detectron2](https://github.com/facebook
 
 If you want to reproduce our results, please dowload the datasets from [AI City Challenge 22](https://www.aicitychallenge.org/2022-data-and-evaluation/) and put them in a folder called *data* outside the repository:
 
+```
 ├── data
    ├── AICity_data
       ├── train
@@ -70,7 +71,8 @@ If you want to reproduce our results, please dowload the datasets from [AI City 
       ├── AICity.py
          ...
       ├── utilities
-      
+```
+
 The user has the ability to select which training sequences (S01, S03...) want by switching the train_seq parameter of the the AICity object in the *w5/main.py* file. The pipeline creates a data folder inside *w5* in which all the predictions are stored divided in different folders depending on the training sequences. Furthermore, the user has the ability of running just some parts of the pipeline just by comenting the corresponding lines in the *w5/main.py* file.
 
 So to run the TrackNet run:
