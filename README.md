@@ -8,6 +8,12 @@ In addition to the main challenge in this repository there are several studies d
 
 [Week 1 - Database, Evaluation Metrics and Representation](/w1)
 
+[Week 2 - Background Estimation](/w2)
+
+[Week 3 - Object Detection and Tracking](/w3)
+
+[Week 4 - Optical Flow Estimation and Object Tracking](/w4)
+
 This module has been done by 4 students of the MSc in Computer Vision for the M6-Video Analysis module:
 
 | Members | Contact | GitHub |
