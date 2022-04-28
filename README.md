@@ -29,7 +29,7 @@ In this repository we present *TrackNet*, a model capable of detecting and track
 
 The model pipeline is the following:
 
-HYPERVINCULO
+![example](w5/data/fasterrcnn/S03-S04/figures/example.png)
 
 All the model justification and results are in the following slides: [SLIDES](https://docs.google.com/presentation/d/1hbSbUkJ5XG_9_Yyj9-YAxtO10loXa0TE8gJzPEHQc4k/edit?usp=sharing)
 
