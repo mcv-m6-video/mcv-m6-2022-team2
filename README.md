@@ -23,7 +23,7 @@ This module has been done by 4 students of the MSc in Computer Vision for the M6
 | Francesc Net Barnès | francescnet@gmail.com  | [cesc47](https://github.com/cesc47) |
 | David Serrano Lozano | 99d.serrano@gmail.com | [davidserra9](https://github.com/davidserra9) |
 
-### Introduction
+## Introduction
 
 In this repository we present *TrackNet*, a model capable of detecting and tracking cars across intersections in more than one camera. The model is based on a Faster R-CNN with ResNeXt101 backbone, Deep SORT with some refinements and Triplet Metric Learning with ResNet50 backbone for the object Re-ID.
 
