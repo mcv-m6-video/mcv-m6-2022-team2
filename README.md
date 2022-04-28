@@ -6,6 +6,8 @@ The dataset used is a subset of 3 sequences of the *AI City dataset*. This datas
 
 In addition to the main challenge in this repository there are several studies done such as background estimation and optical flow estimation and representation. The corresponding detailed expositions are inside the w1, w2, w3 and w4 folders. However, all the code corresponding to the main challenge is in the w5 folder.
 
+[Week 1 - Database, Evaluation Metrics and Representation](/w1)
+
 This module has been done by 4 students of the MSc in Computer Vision for the M6-Video Analysis module:
 
 | Members | Contact | GitHub |
