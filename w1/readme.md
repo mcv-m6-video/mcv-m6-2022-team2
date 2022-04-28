@@ -1,4 +1,4 @@
-## Week 1
+# Week 1 - Database, Evaluation Metrics and Representation
 
 The task corresponding to week 1 were devoted to explore the available data in the datasets, as well as the metrics for evaluation.
 We make use of the ground truth anotations available in AI City dataset to asses and understand the Avergage Precission and 
