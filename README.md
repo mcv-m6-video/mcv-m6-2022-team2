@@ -1,18 +1,12 @@
-## Master in Computer Vision, Barcelona 2021-2022 - Module 6: Video Analysis
+## Video Surveillance for Road Traffic Monitoring
 
-This module is devoted to explore Computer Vision techniques to the problem of Road Traffic Monitoring, 
-using video sequences of vehicles in roads. Throuought the weeks, we present different strategies for estimating 
-background information, detecting foreground objects, estimating optical flow and tracking objects.
+This project is devoted to explore Computer Vision video techniques to track cars across multiple cameras at a single intersection and multiple intersections spreading out in a mid-size city.
 
-Mainly two datasets are used for this project:
+The dataset used is a subset of 3 sequences of the *AI City dataset*. This dataset offers 3.25 hours of videos showing road intersections and driving vehicles. 40 cameras were used in 10 different intersections. The dataset also offers the frame-by-frame bounding boxes of each vehicle, giving a total of 229,680 bounding boxes for 666 different vehicles.
 
-- *KITTI dataset*: This dataset offers pairs of images corresponding to a video sequence of a road, as well as the optical flow ground truth.
-  Train set: 194 instances, Test set: 195 instances (image pairs + Optical flow GT)
+In addition to the main challenge in this repository there are several studies done such as background estimation and optical flow estimation and representation. The corresponding detailed expositions are inside the w1, w2, w3 and w4 folders. However, all the code corresponding to the main challenge is in the w5 folder.
 
-- *AI City dataset*: This dataset offers 3.25 hours of videos showing road interections and driving vehicles. 40 cameras were used in 10 different intersections.
-The dataset offers the frame-by-frame bounding boxes of each vehicle, giving a total of 229,680 bounding boxes for 666 different vehicles.
-
-## Team 2
+This module has been done by 4 students of the MSc in Computer Vision for the M6-Video Analysis module:
 
 | Members | Contact | GitHub |
 | :---         |   :---    |   :---    |
