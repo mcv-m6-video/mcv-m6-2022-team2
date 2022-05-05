@@ -33,6 +33,8 @@ The model pipeline is the following:
 
 All the model justification and results are in the following slides: [SLIDES](https://docs.google.com/presentation/d/1hbSbUkJ5XG_9_Yyj9-YAxtO10loXa0TE8gJzPEHQc4k/edit?usp=sharing)
 
+Or in the following paper (both in pdf and LaTeX format): [PDF](Paper_M6__Video_Surveillance_for_Road_Traffic_Monitoring.pdf) / [LaTeX](https://www.overleaf.com/read/dfvxdmdtwtny)
+
 ## Car Detection
 
 The first step of the model is to run a finetuned Faster R-CNN with ResNext101 backbone to predict the position of the cars frame-by-frame with theit bounding boxes. We reach a top **Average Precision of 0.9852** on the c010 of S03.
